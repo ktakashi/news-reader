@@ -32,6 +32,16 @@
   (export generate-add-provider
 	  generate-add-feed
 	  generate-process-feed
+	  generate-retrieve-provider
+	  generate-retrieve-summary
+	  ;; Should we move this somewhere?
+	  provider-name
+	  feed-summary-name
+	  feed-summary-link
+	  feed-summary-title
+	  feed-summary-summary
+	  feed-summary-created-date
+	  
 	  *command-logger*)
   (import (rnrs)
 	  (rnrs eval)
@@ -80,7 +90,7 @@
 	(id-generator (lambda () (generator dbi 'provider))))
     (lambda (name)
       (define id (id-generator))
-      (write-info-log (*command-logger*) "Adding provider ~a" provider)
+      (write-info-log (*command-logger*) "Adding provider ~a" name)
       (dbi-execute! stmt id name))))
 
 (define (generate-add-feed dbi)
@@ -103,7 +113,7 @@
   (define count-sql "select count(*) from feed")
   (define select-sql
     (ssql->sql
-     '(select ((~ f url) (~ t plugin))
+     '(select ((~ f id) (~ f url) (~ t plugin))
 	      (from ((as feed f)
 		     (inner-join (as feed_type t)
 				 (on (= (~ f feed_type_id) (~ t id))))
@@ -121,9 +131,11 @@
 ;; 				(where (= (~ f guid) (~ v g))))))))))
   (define insert-sql
     (ssql->sql
-     '(insert-into feed_summary (id guid title summary pubDate)
-	(with ((as v (select ((as ? i) (as ? g) (as ? t) (as ? s) (as ? p)))))
-	  (select ((~ v i) (~ v g) (~ v t) (~ v s) (~ v p))
+     '(insert-into feed_summary (id feed_id guid title summary pubDate)
+	(with ((as v (select ((as ? i) (as ? fi) 
+			      (as ? g) (as ? t)
+			      (as ? s) (as ? p)))))
+	  (select ((~ v i) (~ v fi) (~ v g) (~ v t) (~ v s) (~ v p))
 	    (from v)
 	    (where (not-exists (select (id)
 				 (from (as feed_summary f))
@@ -138,11 +150,12 @@
   (define max-thread-count 100)
   (define id-generator (lambda () (generator dbi 'feed_summary)))
   (define (error-handler e)
-    (write-error-log (*command-logger*) (describe-condition e)))
+    (write-error-log (*command-logger*)
+      (call-with-string-output-port (lambda (out) (report-error e out)))))
   (lambda (provider)
     (define thread-pool (make-thread-pool (min (get-count) max-thread-count)
 					  error-handler))
-    (define (task url plugin)
+    (define (task feed-id url plugin)
       (lambda ()
 	(define process-feed
 	  (eval 'process-feed
@@ -153,11 +166,37 @@
 				 :secure? (string-prefix? "https" url))))
 	  (for-each (lambda (item)
 		      (let ((id (id-generator)))
-			(apply dbi-execute! insert-stmt id item)))
+			(apply dbi-execute! insert-stmt id feed-id item)))
 		    (process-feed b)))))
     (dbi-do-fetch! (v (dbi-execute-query! select-stmt provider))
       (thread-pool-push-task! thread-pool
-        (task (vector-ref v 0) (vector-ref v 1))))
+        (task (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))))
     (thread-pool-wait-all! thread-pool)))
 
+(define-record-type provider (fields name))
+(define (generate-retrieve-provider dbi)
+  (define select-sql "select name from provider")
+  (define select-stmt (dbi-prepare dbi select-sql))
+  (lambda ()
+    (dbi-query-map (dbi-execute-query! select-stmt)
+      (lambda (query) (make-provider (vector-ref query 0))))))
+    
+(define-record-type feed-summary
+  (fields name link title summary created-date))
+(define (generate-retrieve-summary dbi)
+  (define select-sql
+    (ssql->sql
+     '(select ((~ p name) (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
+	(from ((as feed_summary s)
+	       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
+	       (inner-join (as provider p)
+			   (on (= (~ p id) (~ f provider_id))))))
+	(where (= (~ p name) ?))
+	(limit ?)
+	(offset ?))))
+  (define select-stmt (dbi-prepare dbi select-sql))
+  (lambda (provider limit offset)
+    (dbi-query-map (dbi-execute-query! select-stmt provider limit offset)
+      (lambda (query)
+	(apply make-feed-summary (vector->list query))))))
 )

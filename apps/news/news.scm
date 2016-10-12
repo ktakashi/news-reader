@@ -28,19 +28,39 @@
 ;;;   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;;
 
+#!read-macro=sagittarius/regex
 (library (plato webapp news)
-  (export entry-point support-methods)
+  (export entry-point support-methods mount-paths)
   (import (rnrs)
 	  (paella)
 	  (tapas)
 	  (plato)
 	  (dbi)
+	  (text json)
+	  (sagittarius regex)
 	  (sagittarius)
 	  (news-reader commands)
 	  (news-reader constants))
 
 (define dbi-connection (dbi-connect +dsn+))
-  
+
+(define provider-retriever (generate-retrieve-provider dbi-connection))
+(define summary-retriever (generate-retrieve-summary dbi-connection))
+
+(define (json->string obj)
+  (let-values (((out extract) (open-string-output-port)))
+    (json-write obj out)
+    (extract)))
+
+(define (retrieve-providers req)
+  (let ((names (map provider-name (provider-retriever))))
+    (values 200 'application/json (json->string names))))
+    
+(define (mount-paths)
+  `(
+    ((GET) "/providers" ,retrieve-providers)
+    ))
+
 (define (support-methods) '(GET))
 
 (define (static-handler file)

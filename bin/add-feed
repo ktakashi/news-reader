@@ -13,19 +13,20 @@ exec sagittarius -L${this_path}/../lib $0 "$@"
 	(dbi))
 
 (define dbi-conn (dbi-connect +dsn+ :auto-commit? #f))
-
 (define add-feed (generate-add-feed dbi-conn))
 
 (define (check-url url)
-  (guard (e (else (print "Server not found: " url) (exit -1)))
+  (guard (e (else
+	     (error-log console-logger (format "Server not found: ~a" url))
+	     (exit -1)))
     (let*-values (((server path) (url-server&path url))
-		  ((status header body) (http-head server path)))
+		  ((status header body) (http-get server path)))
       (unless (string=? status "200")
-	(print "Given url doesn't exist or reachable: " url)
+	(error-log console-logger (format "Got status ~a for ~a" status url))
 	(exit -1)))))
 
 (define console-logger
-  (make-logger +info-level+ (make-appender "[~w5] [~l] ~m")))
+  (make-logger +debug-level+ (make-appender "[~w5] [~l] ~m")))
 
 (define (main args)
   (define (usage)

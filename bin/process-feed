@@ -15,7 +15,7 @@ exec sagittarius -L${this_path}/../lib $0 "$@"
 (define process-feed (generate-process-feed dbi-conn))
 
 (define console-logger
-  (make-logger +info-level+ (make-appender "[~w5] [~l] ~m")))
+  (make-async-logger +info-level+ (make-appender "[~w5] [~l] ~m")))
 
 (define (main args)
   (when (null? (cdr args))

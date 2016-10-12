@@ -13,7 +13,8 @@ create table feed (
 );
 
 create table feed_summary (
-       id bigint primary key, -- should be big int but for SQLite3
+       id bigint primary key,
+       feed_id integer not null,
        guid varchar(1024) unique,
        title varchar(2048) not null,
        summary blob,
