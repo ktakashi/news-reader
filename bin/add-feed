@@ -1,0 +1,48 @@
+#!/bin/sh
+#| -*- mode:scheme; coding:utf-8 -*-
+this_path=`dirname "$0"`
+exec sagittarius -L${this_path}/../lib $0 "$@"
+|#
+
+(import (rnrs)
+	(news-reader commands)
+	(news-reader constants)
+	(match)
+	(rfc http)
+	(util logging)
+	(dbi))
+
+(define dbi-conn (dbi-connect +dsn+ :auto-commit? #f))
+
+(define add-feed (generate-add-feed dbi-conn))
+
+(define (check-url url)
+  (guard (e (else (print "Server not found: " url) (exit -1)))
+    (let*-values (((server path) (url-server&path url))
+		  ((status header body) (http-head server path)))
+      (unless (string=? status "200")
+	(print "Given url doesn't exist or reachable: " url)
+	(exit -1)))))
+
+(define console-logger
+  (make-logger +info-level+ (make-appender "[~w5] [~l] ~m")))
+
+(define (main args)
+  (define (usage)
+    (print "add-feed PROVIDER URL [TYPE]")
+    (print " OPTIONAL")
+    (print "  TYPE - feed type (default RSS 2.0)")
+    (exit -1))
+  (define (add args)
+    (match args
+      ((provider url) (add (list provider url "RSS 2.0")))
+      ((provider url type)
+       (check-url url)
+       (add-feed provider url type))
+      (_ (usage))))
+  (when (null? (cdr args)) (usage))
+  (*command-logger* console-logger)
+  (add (cdr args))
+  (dbi-commit! dbi-conn))
+
+

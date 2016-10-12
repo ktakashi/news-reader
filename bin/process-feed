@@ -1,0 +1,26 @@
+#!/bin/sh
+#| -*- mode:scheme; coding:utf-8 -*-
+this_path=`dirname "$0"`
+exec sagittarius -L${this_path}/../lib $0 "$@"
+|#
+
+(import (rnrs)
+	(news-reader commands)
+	(news-reader constants)
+	(util logging)
+	(dbi))
+
+(define dbi-conn (dbi-connect +dsn+ :auto-commit? #f))
+
+(define process-feed (generate-process-feed dbi-conn))
+
+(define console-logger
+  (make-logger +info-level+ (make-appender "[~w5] [~l] ~m")))
+
+(define (main args)
+  (when (null? (cdr args))
+    (print "add-provider NAME")
+    (exit -1))
+  (*command-logger* console-logger)
+  (process-feed (cadr args))
+  (dbi-commit! dbi-conn))
