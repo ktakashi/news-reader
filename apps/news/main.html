@@ -17,22 +17,37 @@
     <div id="control" class="root-container">
       <div ng-app="news" id="news">
 	<div ng-controller="providerCtrl" ng-cloak>
-	  <div ng-repeat="provider in providers" class="provider">
-	    <div class="provider name">{provider}</div>
+	  <div ng-repeat="(provider, summary) in summaries" class="feeds">
+	    <div class="provider">{{provider}}</div>
+	    <div ng-repeat="s in summary" class="feed">
+	      <h3 class="title">
+		<a href="{{s.link}}" class="link">{{s.title}}</a>
+	      </h3>
+	      <div class="summary">{{s.summary}}</div>
+	      <div class="published">{{s.created}}</div>
+	    </div>
 	  </div>
 	</div>
       </div>
     </div>
     <script><!--
-var news = angular.module('news');
+var news = angular.module('news', []);
 
 news.controller('providerCtrl', function($scope, $http) {
     $scope.providers = [];
+    $scope.summaries = {};
     $http.get("/news/providers").
 	then(function (response) {
 	    $scope.providers = response.data;
+	    $scope.providers.forEach(function (provider) {
+		$http.get("/news/summary/" + provider).
+		    then(function (response) {
+			$scope.summaries[provider] = response.data;
+		    });
+	    });
 	});
 })
 -->
+    </script>
   </body>
 </html>

@@ -19,7 +19,7 @@ exec sagittarius -L${this_path}/../lib $0 "$@"
 
 (define (main args)
   (when (null? (cdr args))
-    (print "add-provider NAME")
+    (print "process-feed NAME")
     (exit -1))
   (*command-logger* console-logger)
   (process-feed (cadr args))

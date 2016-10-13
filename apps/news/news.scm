@@ -35,13 +35,33 @@
 	  (paella)
 	  (tapas)
 	  (plato)
+	  (cuberteria)
 	  (dbi)
+	  (clos user)
 	  (text json)
 	  (sagittarius regex)
+	  (sagittarius object)
 	  (sagittarius)
 	  (news-reader commands)
-	  (news-reader constants))
+	  (news-reader constants)
+	  (srfi :19))
 
+(define-syntax with-path-variable
+  (syntax-rules ()
+    ((_ "gen" regexp (b ...) ((v d n) ...))
+     (let ((m regexp))
+       (let ((v (if m (m n) d)) ...)
+	 b ...)))
+    ((_ "count" regexp () (b ...) (t ...) n)
+     (with-path-variable "gen" regexp (b ...) (t ...)))
+    
+    ((_ "count" regexp ((v d) v* ...) (b ...) (t ...) n)
+     (with-path-variable "count" regexp (v* ...) (b ...)
+			 ((v d (+ n 1)) t ...) (+ n 1)))
+    
+    ((_ regexp (variables ...) body ...)
+     (with-path-variable "count" regexp (variables ...) (body ...) () 0))))
+  
 (define dbi-connection (dbi-connect +dsn+))
 
 (define provider-retriever (generate-retrieve-provider dbi-connection))
@@ -55,10 +75,42 @@
 (define (retrieve-providers req)
   (let ((names (map provider-name (provider-retriever))))
     (values 200 'application/json (json->string names))))
-    
+
+(define (utf8->integer u8)
+  (let ((v (utf8->string u8)))
+    (or (string->number v)
+	(error 'limit&offset "invalid value" v))))
+(define-class <limit&offset> (<converter-mixin>)
+  ((limit :init-value 50 :converter utf8->integer)
+   (offset :init-value 0 :converter utf8->integer)))
+
+(define retrieve-summary
+  (cuberteria-object-mapping-handler <limit&offset>
+    (lambda (limit&offet req)
+      (define (->array summary)
+	`#((link . ,(feed-summary-link summary))
+	   (title . ,(feed-summary-title summary))
+	   (summary . ,(utf8->string
+			(get-bytevector-all (feed-summary-summary summary))))
+	   (created . ,(string-append
+			(date->string
+			 (time-utc->date (feed-summary-created-date summary))
+			 "~5")
+			"Z"))))
+      (with-path-variable (#/summary\/(.+)/ (http-request-path req))
+	  ((provider #f))
+	(if provider
+	    (let ((summaries (summary-retriever provider
+						(~ limit&offet 'limit)
+						(~ limit&offet 'offset))))
+	      (values 200 'application/json
+		      (json->string (map ->array summaries))))
+	    (values 404 'text/plain "Not found"))))))
+	  
 (define (mount-paths)
   `(
     ((GET) "/providers" ,retrieve-providers)
+    ((GET) #/summary\/.+/ ,retrieve-summary)
     ))
 
 (define (support-methods) '(GET))
