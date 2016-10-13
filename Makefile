@@ -1,10 +1,14 @@
-.PHONY: sqlite3 list help test_data
+.PHONY: sqlite3 list help test_data run stop
 .DEFAULT_GOAL := all
 
 SQLITE3_DB ?= feed.db
 SQLITE3 ?= sqlite3
 
 DSN_FILE=lib/news-reader/dsn.dat
+
+PORT ?= 8080
+SHUTDOWN_PORT ?= 8081
+SAGITTARIUS ?= sagittarius
 
 # for tests
 ADD_PROVIDER=bin/add-provider
@@ -36,3 +40,13 @@ testdata: sqlite3
 	$(ADD_PROVIDER) $(BBC)
 	$(ADD_FEED) $(BBC) $(BBC_FEED)
 	$(PROCESS_FEED) $(BBC)
+
+run:
+	@echo Starting news-reader on $(PORT)
+	./jobs/process-feeds &
+	$(SAGITTARIUS) run.scm -p$(PORT) -s$(SHUTDOWN_PORT) &
+
+stop:
+	@echo Stoppng news-reader
+	$(SAGITTARIUS) run.scm -s$(SHUTDOWN_PORT) -c stop
+	./jobs/process-feeds -c stop

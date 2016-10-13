@@ -1,0 +1,98 @@
+#!/bin/sh
+#| -*- mode:scheme; coding:utf-8 -*-
+this_path=`dirname "$0"`
+SAGITTARIUS=${SAGITTARIUS:-"sagittarius"}
+exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
+|#
+
+(import (rnrs)
+	(news-reader commands)
+	(news-reader constants)
+	(util logging)
+	(util timer)
+	(util file)
+	(sagittarius)
+	(sagittarius process)
+	(sagittarius filewatch)
+	(getopt)
+	(srfi :18)
+	(srfi :19)
+	(dbi))
+
+(define logger
+  (make-async-logger +info-level+
+   (make-daily-rolling-file-appender "[~w5] [~l] ~m"
+    "logs/process-feeds.log")))
+
+
+(define-constant +work-dir+ "work/process-feeds")
+(define-constant +lock-file+ "process-feeds.lck")
+
+(define (timer-handler e)
+  (error-log logger (call-with-string-output-port
+		     (lambda (o) (report-error e o)))))
+(define (start-job)
+  (define dbi-conn (dbi-connect +dsn+ :auto-commit? #f))
+  (define add-feed (generate-add-feed dbi-conn))
+  (define retrieve-provider (generate-retrieve-provider dbi-conn))
+  (define process-feed (generate-process-feed dbi-conn))
+  (define timer (make-timer :error-handler timer-handler))
+  (define duration (make-time time-duration 0 3600))
+  (define watcher (make-filesystem-watcher))
+  
+  (define (do-process)
+    (*command-logger* logger)
+    (for-each (lambda (p)
+		(let ((n (provider-name p)))
+		  (info-log logger (format "Processing feed for ~a" n))
+		  (process-feed n)))
+	      (retrieve-provider)))
+
+  (define (gen-add-feed provider)
+    (lambda (p e)
+      (*command-logger* logger)
+      (when (file-regular? p)
+	(let ((feed (call-with-input-file p get-line)))
+	  ;; for now only RSS 2.0...
+	  (add-feed provider feed)
+	  (delete-file p)))))
+  (when (file-exists? +lock-file+)
+    (error 'process-feeds "There's already a job"))
+  (unless (file-exists? +work-dir+) (create-directory* +work-dir+))
+  (for-each (lambda (p)
+	      (let* ((n (provider-name p))
+		     (d (build-path +work-dir+ n)))
+		(unless (file-exists? d) (create-directory* d))
+		(filesystem-watcher-add-path!
+		 watcher d '(modify access)
+		 (gen-add-feed n))))
+	    (retrieve-provider))
+  (let ((feed-id (timer-schedule! timer do-process 0 duration)))
+    (call-with-output-file +lock-file+
+      (lambda (out)
+	(write (list (getpid) feed-id) out) (newline out))))
+  (timer-start! timer)
+  (filesystem-watcher-start-monitoring! watcher)
+  (thread-join! (current-thread)))
+
+(define (stop-job)
+  (unless (file-exists? +lock-file+) (error 'process-feeds "There's no job"))
+  (let ((info (call-with-input-file +lock-file+ read)))
+    (process-kill (pid->process (car info)))
+    (delete-file +lock-file+)))
+
+(define (add-feed args)
+  (let ((file (build-path +work-dir+ (car args))))
+    (unless (file-exists? file) (error 'feed "No such provider" (car args)))
+    (call-with-output-file (build-path file (number->string (microsecond) 32))
+      (lambda (out) (put-string out (cadr args))))))
+
+(define (main args)
+  (with-args (cdr args)
+      ((command (#\c "command") #t "start")
+       . rest)
+    (case (string->symbol command)
+      ((start) (start-job))
+      ((stop) (stop-job))
+      ((feed) (add-feed rest))
+      (else (error 'process-feeds "Unknown command" command)))))
