@@ -1,0 +1,61 @@
+
+.root-container {
+    
+}
+
+.root-container h1.title {
+    font-size: large;
+}
+
+.news-container {
+    width: 100%;
+    position: relative;
+}
+
+.news-container .feeds {
+    border: 1px solid;
+    font-size: small;
+    width: 30%;
+    position: relative;
+    float: left;
+    height: 500px;
+    overflow: scroll;
+    font-family: "Times New Roman", Times, serif;
+}
+
+.feeds h2.provider {
+
+}
+
+.feeds .feed {
+    border-top: 1px solid gray;
+    padding-bottom: 5px;
+    width: 100%;
+}
+
+.feed h3.title {
+    margin-top: 5px;
+}
+
+.dialog-container {
+    width: 100%;
+    height: 100%;
+}
+
+.dialog-container .title {
+    font-size: medium;
+}
+
+.dialog-container .close {
+    /* TODO */
+}
+
+.dialog-container .contents {
+    width: 100%;
+    height: 100%;
+}
+
+.dialog-container .contents .frame {
+    width: 100%;
+    height: 100%;
+}

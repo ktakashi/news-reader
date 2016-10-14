@@ -9,19 +9,21 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 	(news-reader commands)
 	(news-reader constants)
 	(util logging)
+	(getopt)
 	(dbi))
 
 (define dbi-conn (dbi-connect +dsn+ :auto-commit? #f))
 
 (define process-feed (generate-process-feed dbi-conn))
 
-(define console-logger
-  (make-async-logger +info-level+ (make-appender "[~w5] [~l] ~m")))
-
+(define (make-console-logger level)
+  (make-async-logger level (make-appender "[~w5] [~l] ~m")))
 (define (main args)
-  (when (null? (cdr args))
-    (print "process-feed NAME")
-    (exit -1))
-  (*command-logger* console-logger)
-  (process-feed (cadr args))
-  (dbi-commit! dbi-conn))
+  (with-args (cdr args)
+      ((d (#\d "debug") #f #f) . rest)
+    (when (null? rest)
+      (print "process-feed [-d] NAME")
+      (exit -1))
+    (*command-logger* (make-console-logger (if d +debug-level+ +info-level+)))
+    (process-feed (car rest))
+    (dbi-commit! dbi-conn)))

@@ -194,6 +194,7 @@
 	       (inner-join (as provider p)
 			   (on (= (~ p id) (~ f provider_id))))))
 	(where (= (~ p name) ?))
+	(order-by ((~ s pubDate) desc))
 	(limit ?)
 	(offset ?))))
   (define select-stmt (dbi-prepare dbi select-sql))

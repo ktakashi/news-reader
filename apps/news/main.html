@@ -12,28 +12,30 @@
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-resource.min.js"></script>
     <!-- Angular Material Library -->
     <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc4/angular-material.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/news/styles/news.css" />
   </head>
   <body>
     <div id="control" class="root-container">
-      <div ng-app="news" id="news">
+      <h1 class="title">News reader</h1>
+      <div ng-app="news" id="news" class="news-container">
 	<div ng-controller="providerCtrl" ng-cloak>
 	  <div ng-repeat="(provider, summary) in summaries" class="feeds">
-	    <div class="provider">{{provider}}</div>
+	    <h2 class="provider">{{provider}}</h2>
 	    <div ng-repeat="s in summary" class="feed">
 	      <h3 class="title">
-		<a href="{{s.link}}" class="link">{{s.title}}</a>
+		<a ng-click="showLink($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
 	      </h3>
 	      <div class="summary">{{s.summary}}</div>
-	      <div class="published">{{s.created}}</div>
+	      <div class="published">{{s.created | date : longDate}}</div>
 	    </div>
 	  </div>
 	</div>
       </div>
     </div>
     <script><!--
-var news = angular.module('news', []);
+var news = angular.module('news', ['ngMaterial']);
 
-news.controller('providerCtrl', function($scope, $http) {
+news.controller('providerCtrl', function($scope, $http, $mdDialog) {
     $scope.providers = [];
     $scope.summaries = {};
     $http.get("/news/providers").
@@ -46,7 +48,33 @@ news.controller('providerCtrl', function($scope, $http) {
 		    });
 	    });
 	});
-})
+    $scope.showLink = function (ev, link, title) {
+	$mdDialog.show({
+	    templateUrl: '/news/html/iframe.html',
+	    parent: angular.element(document.body),
+	    targetEvent: ev,
+	    clickOutsideToClose: true,
+	    controller: 'iFrameCtrl',
+	    fullscreen: true,
+	    resolve: {
+		url: function () {
+		    return link;
+		},
+		title: function() {
+		    return title;
+		}
+	    }
+	});
+    };
+});
+
+news.controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
+    $scope.givenUrl = $sce.trustAsResourceUrl(url);
+    $scope.title = title;
+    $scope.close = function () {
+	$mdDialog.cancel();
+    }
+});
 -->
     </script>
   </body>

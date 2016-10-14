@@ -46,7 +46,8 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 		(let ((n (provider-name p)))
 		  (info-log logger (format "Processing feed for ~a" n))
 		  (process-feed n)))
-	      (retrieve-provider)))
+	      (retrieve-provider))
+    (dbi-commit! dbi-conn))
 
   (define (gen-add-feed provider)
     (lambda (p e)
@@ -76,8 +77,9 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
       (lambda (out)
 	(write (list (getpid) feed-id) out) (newline out))))
   (timer-start! timer)
+  (filesystem-watcher-start-monitoring! watcher)
   (info-log logger "Job started")
-  (filesystem-watcher-start-monitoring! watcher :background #f))
+  (thread-join! (current-thread)))
 
 (define (stop-job)
   (unless (file-exists? +lock-file+) (error 'process-feeds "There's no job"))

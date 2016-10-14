@@ -37,9 +37,8 @@ sqlite3:
 	@echo '"dbi:sqlite3:database=$(shell pwd)/$(SQLITE3_DB)"' >> $(DSN_FILE)
 
 testdata: sqlite3
-	$(ADD_PROVIDER) $(BBC)
-	$(ADD_FEED) $(BBC) $(BBC_FEED)
-	$(PROCESS_FEED) $(BBC)
+	$(SQLITE3) $(SQLITE3_DB) < scripts/insert_bbc_feed.sql
+	$(PROCESS_FEED) -d $(BBC)
 
 run:
 	@echo Starting news-reader on $(PORT)

@@ -46,6 +46,9 @@
 	  (news-reader constants)
 	  (srfi :19))
 
+(define style-loader (cuberteria-resource-loader 'text/css "./css"))
+(define template-loader (cuberteria-resource-loader 'text/html "./templates"))
+  
 (define-syntax with-path-variable
   (syntax-rules ()
     ((_ "gen" regexp (b ...) ((v d n) ...))
@@ -109,8 +112,10 @@
 	  
 (define (mount-paths)
   `(
-    ((GET) "/providers" ,retrieve-providers)
+    ((GET) "/providers"   ,retrieve-providers)
     ((GET) #/summary\/.+/ ,retrieve-summary)
+    ((GET) #/styles/      ,style-loader)
+    ((GET) #/html/        ,template-loader)
     ))
 
 (define (support-methods) '(GET))
