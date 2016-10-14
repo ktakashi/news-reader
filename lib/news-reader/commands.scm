@@ -73,7 +73,7 @@
        #'(k level logger (format fmt args ...))))))
 (define-syntax write-debug-log
   (syntax-rules ()
-    ((_ logger msg ...) (write-log info logger msg ...))))
+    ((_ logger msg ...) (write-log debug logger msg ...))))
 (define-syntax write-info-log
   (syntax-rules ()
     ((_ logger msg ...) (write-log info logger msg ...))))
@@ -107,6 +107,8 @@
       (define id (id-generator))
       (write-info-log (*command-logger*)
 		      "Adding feed for provider ~a (~a)" provider url)
+      (write-debug-log (*command-logger*)
+		       "SQL ~a (~a ~a ~a ~a)" sql id provider url type)
       (dbi-execute! stmt id provider type url))))
 
 (define (generate-process-feed dbi)

@@ -28,7 +28,7 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 (define-constant +work-dir+ "work/process-feeds")
 (define-constant +lock-file+ "process-feeds.lck")
 
-(define (timer-handler e)
+(define (error-handler e)
   (error-log logger (call-with-string-output-port
 		     (lambda (o) (report-error e o)))))
 (define (start-job)
@@ -36,9 +36,9 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
   (define add-feed (generate-add-feed dbi-conn))
   (define retrieve-provider (generate-retrieve-provider dbi-conn))
   (define process-feed (generate-process-feed dbi-conn))
-  (define timer (make-timer :error-handler timer-handler))
+  (define timer (make-timer :error-handler error-handler))
   (define duration (make-time time-duration 0 3600))
-  (define watcher (make-filesystem-watcher))
+  (define watcher (make-filesystem-watcher :error-handler error-handler))
   
   (define (do-process)
     (*command-logger* logger)
@@ -50,11 +50,14 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 
   (define (gen-add-feed provider)
     (lambda (p e)
-      (*command-logger* logger)
       (when (file-regular? p)
+	(info-log logger (format "Processing ~a" p))
 	(let ((feed (call-with-input-file p get-line)))
+	  (*command-logger* logger)
 	  ;; for now only RSS 2.0...
-	  (add-feed provider feed)
+	  (guard (e (else (error-handler e)))
+	    (add-feed provider feed "RSS 2.0")
+	    (dbi-commit! dbi-conn))
 	  (delete-file p)))))
   (when (file-exists? +lock-file+)
     (error 'process-feeds "There's already a job"))
@@ -62,6 +65,7 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
   (for-each (lambda (p)
 	      (let* ((n (provider-name p))
 		     (d (build-path +work-dir+ n)))
+		(info-log logger (format "Watching ~a" d))
 		(unless (file-exists? d) (create-directory* d))
 		(filesystem-watcher-add-path!
 		 watcher d '(modify access)
@@ -72,13 +76,13 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
       (lambda (out)
 	(write (list (getpid) feed-id) out) (newline out))))
   (timer-start! timer)
-  (filesystem-watcher-start-monitoring! watcher)
-  (thread-join! (current-thread)))
+  (info-log logger "Job started")
+  (filesystem-watcher-start-monitoring! watcher :background #f))
 
 (define (stop-job)
   (unless (file-exists? +lock-file+) (error 'process-feeds "There's no job"))
   (let ((info (call-with-input-file +lock-file+ read)))
-    (process-kill (pid->process (car info)))
+    (guard (e (else (report-error e))) (process-kill (pid->process (car info))))
     (delete-file +lock-file+)))
 
 (define (add-feed args)

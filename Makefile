@@ -48,5 +48,5 @@ run:
 
 stop:
 	@echo Stoppng news-reader
-	$(SAGITTARIUS) run.scm -s$(SHUTDOWN_PORT) -c stop
+	$(SAGITTARIUS) run.scm -p$(PORT) -s$(SHUTDOWN_PORT) -c stop
 	./jobs/process-feeds -c stop
