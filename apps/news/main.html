@@ -18,15 +18,17 @@
     <div id="control" class="root-container">
       <h1 class="title">News reader</h1>
       <div ng-app="news" id="news" class="news-container">
-	<div ng-controller="providerCtrl" ng-cloak>
+	<div ng-controller="providerCtrl" ng-cloak class="feeds-wrapper">
 	  <div ng-repeat="(provider, summary) in summaries" class="feeds">
 	    <h2 class="provider">{{provider}}</h2>
-	    <div ng-repeat="s in summary" class="feed">
-	      <h3 class="title">
-		<a ng-click="showLink($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
-	      </h3>
-	      <div class="summary">{{s.summary}}</div>
-	      <div class="published">{{s.created | date : longDate}}</div>
+	    <div class="feed-container">
+	      <div ng-repeat="s in summary" class="feed">
+		<h3 class="title">
+		  <a ng-click="showLink($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
+		</h3>
+		<div class="summary">{{s.summary}}</div>
+		<div class="published">{{s.created | date : longDate}}</div>
+	      </div>
 	    </div>
 	  </div>
 	</div>

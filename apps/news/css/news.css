@@ -5,26 +5,43 @@
 
 .root-container h1.title {
     font-size: large;
+    witdh: 100%;
+    text-align: center;
+    background-color: rgb(63, 81, 231);
+    margin: 0px;
+    padding: 10px;
 }
 
 .news-container {
     width: 100%;
     position: relative;
+    margin: 0px;
+}
+
+.feeds-wrapper {
+    margin: 0px;
 }
 
 .news-container .feeds {
-    border: 1px solid;
     font-size: small;
     width: 30%;
     position: relative;
     float: left;
     height: 500px;
-    overflow: scroll;
     font-family: "Times New Roman", Times, serif;
 }
 
 .feeds h2.provider {
+    background-color: rgb(63, 81, 181);
+    margin: 0px;
+    padding: 5px;
+}
 
+.feeds .feed-container {
+    position: relative;
+    overflow: scroll;
+    height: 100%;
+    border: 1px solid;
 }
 
 .feeds .feed {
