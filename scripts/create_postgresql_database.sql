@@ -4,6 +4,7 @@ create database news_reader with owner = news_reader;
 \connect news_reader
 
 \i create_tables.sql
+\i insert_data.sql
 \i create_sequences.sql
 \i create_constraints.sql
 

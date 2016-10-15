@@ -13,7 +13,7 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 	(util logging)
 	(dbi))
 
-(define dbi-conn (make-dbi-connect))
+(define dbi-conn (make-dbi-connection))
 (define add-feed (generate-add-feed dbi-conn))
 
 (define (check-url url)

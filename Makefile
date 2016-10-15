@@ -7,6 +7,7 @@ SQLITE3_DB ?= feed.db
 SQLITE3 ?= sqlite3
 
 DSN_FILE=lib/news-reader/dsn.dat
+LIB_CONSTANTS=lib/news-reader/constants.scm
 
 PORT ?= 8080
 SHUTDOWN_PORT ?= 8081
@@ -36,6 +37,7 @@ sqlite3: create-sqlite3 sqlite3-dsn
 sqlite3-dsn: dsn-message
 	@echo ';; -*- mode:scheme -*-' > $(DSN_FILE)
 	@echo '"dbi:sqlite3:database=$(shell pwd)/$(SQLITE3_DB)"' >> $(DSN_FILE)
+	touch $(LIB_CONSTANTS)
 
 create-sqlite3:
 	rm -f $(SQLITE3_DB)
@@ -61,6 +63,7 @@ postgres: create-postgres postgres-dsn
 postgres-dsn:
 	@echo ';; -*- mode:scheme -*-' > $(DSN_FILE)
 	@echo '"dbi:postgres:host=$(POSTGRES_SERVER);database=news_reader"' >> $(DSN_FILE)
+	touch $(LIB_CONSTANTS)
 
 
 create-postgres:

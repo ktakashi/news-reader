@@ -134,15 +134,15 @@
   (define insert-sql
     (ssql->sql
      '(insert-into feed_summary (id feed_id guid title summary pubDate)
-	(with ((as v (select ((as ? i) (as ? fi) 
-			      (as ? g) (as ? t)
-			      (as ? s) (as ? p)))))
+	(with ((as v (select ((as (cast ? bigint) i) (as (cast ? integer) fi) 
+			      (as (cast ? text) g) (as (cast ? text) t)
+			      (as (cast ? text) s) (as (cast ? timestamp) p)))))
 	  (select ((~ v i) (~ v fi) (~ v g) (~ v t) (~ v s) (~ v p))
 	    (from v)
 	    (where (not-exists (select (id)
 				 (from (as feed_summary f))
 				 (where (= (~ f guid) (~ v g)))))))))))
-		  
+  
   (define count-stmt (dbi-prepare dbi count-sql))
   (define select-stmt (dbi-prepare dbi select-sql))
   (define insert-stmt (dbi-prepare dbi insert-sql))
@@ -168,6 +168,8 @@
 				 :secure? (string-prefix? "https" url))))
 	  (for-each (lambda (item)
 		      (let ((id (id-generator)))
+			(write-debug-log (*command-logger*)
+			  "SQL ~a ~a" insert-sql (cons* id feed-id item))
 			(apply dbi-execute! insert-stmt id feed-id item)))
 		    (process-feed b)))))
     (dbi-do-fetch! (v (dbi-execute-query! select-stmt provider))

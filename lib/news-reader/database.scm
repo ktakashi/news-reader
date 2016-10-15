@@ -36,7 +36,7 @@
 
 (define (make-dbi-connection)
   (dbi-connect +dsn+ :auto-commit? #f 
-	       :username "news-reader"
-	       :password "news-reader"))
+	       :username "news_reader"
+	       :password "news_reader"))
 
 )
