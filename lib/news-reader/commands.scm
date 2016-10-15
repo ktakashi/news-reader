@@ -134,10 +134,16 @@
   (define insert-sql
     (ssql->sql
      '(insert-into feed_summary (id feed_id guid title summary pubDate)
-	(with ((as v (select ((as (cast ? bigint) i) (as (cast ? integer) fi) 
-			      (as (cast ? text) g) (as (cast ? text) t)
-			      (as (cast ? text) s) (as (cast ? timestamp) p)))))
-	  (select ((~ v i) (~ v fi) (~ v g) (~ v t) (~ v s) (~ v p))
+	;; we need explicit cast to make this work on postgres
+	(with ((as v (select ((as (cast ? bigint) i) 
+			      (as (cast ? integer) fi)
+			      (as (cast ? text) g)))))
+	  (select ((~ v i) (~ v fi) (~ v g) 
+		   ;; We don't want to cast pubDate to timestamp
+		   ;; otherwise SQLite doesn't like it. so use
+		   ;; raw value here.
+		   ? ? ?
+		   )
 	    (from v)
 	    (where (not-exists (select (id)
 				 (from (as feed_summary f))

@@ -7,7 +7,7 @@ SQLITE3_DB ?= feed.db
 SQLITE3 ?= sqlite3
 
 DSN_FILE=lib/news-reader/dsn.dat
-LIB_CONSTANTS=lib/news-reader/constants.scm
+TOUCH_LIBS=lib/news-reader/constants.scm lib/news-reader/database.scm
 
 PORT ?= 8080
 SHUTDOWN_PORT ?= 8081
@@ -37,7 +37,7 @@ sqlite3: create-sqlite3 sqlite3-dsn
 sqlite3-dsn: dsn-message
 	@echo ';; -*- mode:scheme -*-' > $(DSN_FILE)
 	@echo '"dbi:sqlite3:database=$(shell pwd)/$(SQLITE3_DB)"' >> $(DSN_FILE)
-	touch $(LIB_CONSTANTS)
+	touch $(TOUCH_LIBS)
 
 create-sqlite3:
 	rm -f $(SQLITE3_DB)
@@ -46,24 +46,24 @@ create-sqlite3:
 
 testdata: sqlite3
 	$(SQLITE3) $(SQLITE3_DB) < scripts/insert_bbc_feed.sql
-	$(PROCESS_FEED) -d $(BBC)
+	SAGITTARIUS='$(SAGITTARIUS)' $(PROCESS_FEED) -d $(BBC)
 
 run:
 	@echo Starting news-reader on $(PORT)
-	./jobs/process-feeds &
+	SAGITTARIUS='$(SAGITTARIUS)' ./jobs/process-feeds &
 	$(SAGITTARIUS) run.scm -p$(PORT) -s$(SHUTDOWN_PORT) &
 
 stop:
 	@echo Stoppng news-reader
 	$(SAGITTARIUS) run.scm -p$(PORT) -s$(SHUTDOWN_PORT) -c stop
-	./jobs/process-feeds -c stop
+	SAGITTARIUS='$(SAGITTARIUS)' ./jobs/process-feeds -c stop
 
 postgres: create-postgres postgres-dsn
 
 postgres-dsn:
 	@echo ';; -*- mode:scheme -*-' > $(DSN_FILE)
 	@echo '"dbi:postgres:host=$(POSTGRES_SERVER);database=news_reader"' >> $(DSN_FILE)
-	touch $(LIB_CONSTANTS)
+	touch $(TOUCH_LIBS)
 
 
 create-postgres:
