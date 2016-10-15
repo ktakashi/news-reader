@@ -7,11 +7,11 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 
 (import (rnrs)
 	(news-reader commands)
-	(news-reader constants)
+	(news-reader database)
 	(util logging)
 	(dbi))
 
-(define dbi-conn (dbi-connect +dsn+ :auto-commit? #f))
+(define dbi-conn (make-dbi-connection))
 
 (define add-provider (generate-add-provider dbi-conn))
 

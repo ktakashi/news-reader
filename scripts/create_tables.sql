@@ -2,7 +2,8 @@
 
 create table provider (
        id integer primary key,
-       name varchar(255) unique
+       name varchar(255) unique,
+       url varchar(1024)
 );
 
 create table feed (
@@ -17,7 +18,7 @@ create table feed_summary (
        feed_id integer not null,
        guid varchar(1024) unique,
        title varchar(2048) not null,
-       summary blob,
+       summary text,
        pubDate timestamp
 );
 

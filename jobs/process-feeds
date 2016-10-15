@@ -7,7 +7,7 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 
 (import (rnrs)
 	(news-reader commands)
-	(news-reader constants)
+	(news-reader database)
 	(util logging)
 	(util timer)
 	(util file)
@@ -32,7 +32,7 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
   (error-log logger (call-with-string-output-port
 		     (lambda (o) (report-error e o)))))
 (define (start-job)
-  (define dbi-conn (dbi-connect +dsn+ :auto-commit? #f))
+  (define dbi-conn (make-dbi-connection))
   (define add-feed (generate-add-feed dbi-conn))
   (define retrieve-provider (generate-retrieve-provider dbi-conn))
   (define process-feed (generate-process-feed dbi-conn))

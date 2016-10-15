@@ -43,7 +43,7 @@
 	  (sagittarius object)
 	  (sagittarius)
 	  (news-reader commands)
-	  (news-reader constants)
+	  (news-reader database)
 	  (srfi :19))
 
 (define style-loader (cuberteria-resource-loader 'text/css "./css"))
@@ -65,7 +65,7 @@
     ((_ regexp (variables ...) body ...)
      (with-path-variable "count" regexp (variables ...) (body ...) () 0))))
   
-(define dbi-connection (dbi-connect +dsn+))
+(define dbi-connection (make-dbi-connection))
 
 (define provider-retriever (generate-retrieve-provider dbi-connection))
 (define summary-retriever (generate-retrieve-summary dbi-connection))
@@ -93,8 +93,7 @@
       (define (->array summary)
 	`#((link . ,(feed-summary-link summary))
 	   (title . ,(feed-summary-title summary))
-	   (summary . ,(utf8->string
-			(get-bytevector-all (feed-summary-summary summary))))
+	   (summary . ,(feed-summary-summary summary))
 	   (created . ,(string-append
 			(date->string
 			 (time-utc->date (feed-summary-created-date summary))
