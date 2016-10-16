@@ -86,12 +86,13 @@
     (eval 'generator (environment `(news-reader ,(string->symbol driver))))))
 
 (define (generate-add-provider dbi)
-  (let ((stmt (dbi-prepare dbi "insert into provider (id, name) values (?, ?)"))
+  (let ((stmt (dbi-prepare dbi 
+		"insert into provider (id, name, url) values (?, ?, ?)"))
 	(id-generator (lambda () (generator dbi 'provider))))
-    (lambda (name)
+    (lambda (name url)
       (define id (id-generator))
       (write-info-log (*command-logger*) "Adding provider ~a" name)
-      (dbi-execute! stmt id name))))
+      (dbi-execute! stmt id name url))))
 
 (define (generate-add-feed dbi)
   (define sql

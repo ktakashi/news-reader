@@ -19,9 +19,9 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
   (make-logger +info-level+ (make-appender "[~w5] [~l] ~m")))
 
 (define (main args)
-  (when (null? (cdr args))
-    (print "add-provider NAME")
+  (unless (= (length args) 3)
+    (print "add-provider NAME URL")
     (exit -1))
   (*command-logger* console-logger)
-  (add-provider (cadr args))
+  (add-provider (cadr args) (caddr args))
   (dbi-commit! dbi-conn))
