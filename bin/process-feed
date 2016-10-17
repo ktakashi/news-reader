@@ -25,5 +25,4 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
       (print "process-feed [-d] NAME")
       (exit -1))
     (*command-logger* (make-console-logger (if d +debug-level+ +info-level+)))
-    (process-feed (car rest))
-    (dbi-commit! dbi-conn)))
+    (process-feed (car rest))))

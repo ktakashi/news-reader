@@ -45,6 +45,6 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
   (when (null? (cdr args)) (usage))
   (*command-logger* console-logger)
   (add (cdr args))
-  (dbi-commit! dbi-conn))
+  (dbi-connection-commit! dbi-conn))
 
 

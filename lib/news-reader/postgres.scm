@@ -32,11 +32,13 @@
     (export generator)
     (import (rnrs)
 	    (sagittarius)
+	    (maquette connection)
 	    (dbi))
 
 ;; PostgreSQL uses sequence to generate id
 ;; the name must be `table_name`_seq
-(define (generator dbi-conn table)
+(define (generator conn table)
+  (define dbi-conn (maquette-connection-dbi-connection conn))
   (let ((seq (format "~a_seq" table)))
     (let ((q (dbi-execute-query-using-connection! dbi-conn
 		(format "select nextval('~a')" seq))))

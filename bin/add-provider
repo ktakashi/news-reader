@@ -24,4 +24,4 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
     (exit -1))
   (*command-logger* console-logger)
   (add-provider (cadr args) (caddr args))
-  (dbi-commit! dbi-conn))
+  (dbi-connection-commit! dbi-conn))

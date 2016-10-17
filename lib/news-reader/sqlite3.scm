@@ -33,6 +33,7 @@
   (import (rnrs)
 	  (rnrs mutable-pairs)
 	  (sagittarius)
+	  (maquette connection)
 	  (dbi)
 	  (srfi :18))
 
@@ -61,7 +62,8 @@
   (define generator
     (let ((mutex (make-mutex))
 	  (sequence #f))
-      (lambda (dbi-conn table)
+      (lambda (conn table)
+	(define dbi-conn (maquette-connection-dbi-connection conn))
 	(unless sequence
 	  (mutex-lock! mutex)
 	  (unless sequence (set! sequence (init-sequence dbi-conn)))
