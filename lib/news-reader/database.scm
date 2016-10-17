@@ -33,7 +33,8 @@
     (export make-dbi-connection
 	    repeal-dbi-connection
 	    dbi-connection-commit!
-	    dbi-prepared-statement)
+	    dbi-prepared-statement
+	    call-with-dbi-connection)
     (import (rnrs)
 	    (dbi)
 	    (news-reader constants)
@@ -54,5 +55,7 @@
 (define (dbi-prepared-statement conn sql)
   (maquette-connection-prepared-statement conn sql))
 
+(define (call-with-dbi-connection proc)
+  (call-with-available-connection *connection-pool* proc))
 
 )

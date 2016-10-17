@@ -64,11 +64,6 @@
     
     ((_ regexp (variables ...) body ...)
      (with-path-variable "count" regexp (variables ...) (body ...) () 0))))
-  
-(define dbi-connection (make-dbi-connection))
-
-(define provider-retriever (generate-retrieve-provider dbi-connection))
-(define summary-retriever (generate-retrieve-summary dbi-connection))
 
 (define (json->string obj)
   (let-values (((out extract) (open-string-output-port)))
@@ -76,8 +71,11 @@
     (extract)))
 
 (define (retrieve-providers req)
-  (let ((names (map provider-name (provider-retriever))))
-    (values 200 'application/json (json->string names))))
+  (call-with-dbi-connection
+   (lambda (dbi-conn)
+     (define provider-retriever (generate-retrieve-provider dbi-conn))
+     (let ((names (map provider-name (provider-retriever))))
+       (values 200 'application/json (json->string names))))))
 
 (define (utf8->integer u8)
   (let ((v (utf8->string u8)))
@@ -90,24 +88,27 @@
 (define retrieve-summary
   (cuberteria-object-mapping-handler <limit&offset>
     (lambda (limit&offet req)
-      (define (->array summary)
-	`#((link . ,(feed-summary-link summary))
-	   (title . ,(feed-summary-title summary))
-	   (summary . ,(feed-summary-summary summary))
-	   (created . ,(string-append
-			(date->string
-			 (time-utc->date (feed-summary-created-date summary))
-			 "~5")
-			"Z"))))
-      (with-path-variable (#/summary\/(.+)/ (http-request-path req))
-	  ((provider #f))
-	(if provider
-	    (let ((summaries (summary-retriever provider
-						(~ limit&offet 'limit)
-						(~ limit&offet 'offset))))
-	      (values 200 'application/json
-		      (json->string (map ->array summaries))))
-	    (values 404 'text/plain "Not found"))))))
+      (call-with-dbi-connection
+       (lambda (dbi-conn)
+	 (define summary-retriever (generate-retrieve-summary dbi-conn))
+	 (define (->array summary)
+	   `#((link . ,(feed-summary-link summary))
+	      (title . ,(feed-summary-title summary))
+	      (summary . ,(feed-summary-summary summary))
+	      (created . ,(string-append
+			   (date->string
+			    (time-utc->date (feed-summary-created-date summary))
+			    "~5")
+			   "Z"))))
+	 (with-path-variable (#/summary\/(.+)/ (http-request-path req))
+	    ((provider #f))
+	  (if provider
+	      (let ((summaries (summary-retriever provider
+						  (~ limit&offet 'limit)
+						  (~ limit&offet 'offset))))
+		(values 200 'application/json
+			(json->string (map ->array summaries))))
+	      (values 404 'text/plain "Not found"))))))))
 	  
 (define (mount-paths)
   `(
