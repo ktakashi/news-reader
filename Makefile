@@ -70,7 +70,7 @@ create-postgres:
 	cd scripts; $(PSQL) -h $(POSTGRES_SERVER) -f create_postgresql_database.sql postgres postgres
 
 clean-postgres:
-	$(PSQL) -f scripts/drop_postgresql.sql postgres postgres
+	$(PSQL) -h $(POSTGRES_SERVER) -f scripts/drop_postgresql.sql postgres postgres
 
 dsn-message:
 	@echo 'Creating dsn.dat'
