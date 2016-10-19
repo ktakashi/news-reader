@@ -29,11 +29,11 @@
 ;;;
 
 (library (news-reader commands)
-  (export generate-add-provider
-	  generate-add-feed
-	  generate-process-feed
-	  generate-retrieve-provider
-	  generate-retrieve-summary
+  (export news-reader-add-provider
+	  news-reader-add-feed
+	  news-reader-process-feed
+	  news-reader-retrieve-provider
+	  news-reader-retrieve-summary
 	  ;; Should we move this somewhere?
 	  provider-name
 	  feed-summary-name
@@ -54,6 +54,7 @@
 	  (srfi :39)
 	  (util logging)
 	  (sagittarius)
+	  (sagittarius control)
 	  (dbi))
 
 ;; default do nothing
@@ -82,138 +83,133 @@
   (syntax-rules ()
     ((_ logger msg ...) (write-log error logger msg ...))))
 
-(define generator
+(define-values (generator duplicate-insert)
   (let-values (((driver op alist) (dbi-parse-dsn +dsn+)))
-    (eval 'generator (environment `(news-reader ,(string->symbol driver))))))
+    (eval '(dialect-procedures)
+	  (environment `(news-reader ,(string->symbol driver))))))
 
-(define (generate-add-provider dbi)
-  (let ((stmt (dbi-prepared-statement dbi 
-		"insert into provider (id, name, url) values (?, ?, ?)"))
-	(id-generator (lambda () (generator dbi 'provider))))
-    (lambda (name url)
-      (define id (id-generator))
-      (write-info-log (*command-logger*) "Adding provider ~a" name)
-      (dbi-execute! stmt id name url))))
+(define (news-reader-add-provider name url)
+  (call-with-dbi-connection
+   (lambda (dbi)
+     (let ((stmt (dbi-prepared-statement dbi 
+		  "insert into provider (id, name, url) values (?, ?, ?)"))
+	   (id (generator dbi 'provider)))
+       (write-info-log (*command-logger*) "Adding provider ~a" name)
+       (dbi-execute! stmt id name url)
+       (dbi-commit! stmt)))))
 
-(define (generate-add-feed dbi)
-  (define sql
-    (ssql->sql
-     '(insert-into feed (id provider_id feed_type_id url)
-		   (values (?
-			    (select (id) (from provider) (where (= name ?)))
-			    (select (id) (from feed_type) (where (= name ?)))
-			    ?)))))
-  (let ((stmt (dbi-prepared-statement dbi sql))
-	(id-generator (lambda () (generator dbi 'feed))))
+(define news-reader-add-feed
+  (let ()
+    (define sql
+      (ssql->sql
+       '(insert-into feed (id provider_id feed_type_id url)
+		     (values (?
+			      (select (id) (from provider) (where (= name ?)))
+			      (select (id) (from feed_type) (where (= name ?)))
+			      ?)))))
     (lambda (provider url type)
-      (define id (id-generator))
-      (write-info-log (*command-logger*)
-		      "Adding feed for provider ~a (~a)" provider url)
-      (write-debug-log (*command-logger*)
-		       "SQL ~a (~a ~a ~a ~a)" sql id provider url type)
-      (dbi-execute! stmt id provider type url))))
+      (call-with-dbi-connection
+       (lambda (dbi)
+	 (define stmt (dbi-prepared-statement dbi sql))
+	 (define id (generator dbi 'feed))
+	 (write-info-log (*command-logger*)
+			 "Adding feed for provider ~a (~a)" provider url)
+	 (write-debug-log (*command-logger*)
+			  "SQL ~a (~a ~a ~a ~a)" sql id provider url type)
+	 (dbi-execute! stmt id provider type url)
+	 (dbi-commit! stmt))))))
 
-(define (generate-process-feed dbi)
-  (define count-sql "select count(*) from feed")
-  (define select-sql
-    (ssql->sql
-     '(select ((~ f id) (~ f url) (~ t plugin))
-	      (from ((as feed f)
-		     (inner-join (as feed_type t)
-				 (on (= (~ f feed_type_id) (~ t id))))
-		     (inner-join (as provider p)
-				 (on (= (~ f provider_id) (~ p id))))))
-	      (where (= (~ p name) ?)))))
-;; SQLite3 doesn't support (VALUES ...) AS T(...) syntax...
-;;   (define insert-sql
-;;     (ssql->sql
-;;      '(insert-into feed_summary (id guid title summary pubDate)
-;; 	(select ((~ v i) (~ v g) (~ v t) (~ v s) (~ v p))
-;; 	  (from (as (values (?) (?) (?) (?) (?)) (v i g t s p)))
-;; 	  (where (not-exists (select (id)
-;; 				(from (as feed_summary f))
-;; 				(where (= (~ f guid) (~ v g))))))))))
-  (define insert-sql
-    (ssql->sql
-     '(insert-into feed_summary (id feed_id guid title summary pubDate)
-	;; we need explicit cast to make this work on postgres
-	(with ((as v (select ((as (cast ? bigint) i) 
-			      (as (cast ? integer) fi)
-			      (as (cast ? text) g)))))
-	  (select ((~ v i) (~ v fi) (~ v g) 
-		   ;; We don't want to cast pubDate to timestamp
-		   ;; otherwise SQLite doesn't like it. so use
-		   ;; raw value here.
-		   ? ? ?
-		   )
-	    (from v)
-	    (where (not-exists (select (id)
-				 (from (as feed_summary f))
-				 (where (= (~ f guid) (~ v g)))))))))))
-  
-  (define count-stmt (dbi-prepared-statement dbi count-sql))
-  (define select-stmt (dbi-prepared-statement dbi select-sql))
-  (define (get-count)
-    (let ((q (dbi-execute-query! count-stmt)))
-      (vector-ref (dbi-fetch! q) 0)))
-  (define max-thread-count 100)
-  (define (error-handler e)
-    (write-error-log (*command-logger*)
-      (call-with-string-output-port (lambda (out) (report-error e out)))))
+(define news-reader-process-feed
+  (let ()
+    (define count-sql "select count(*) from feed")
+    (define select-sql
+      (ssql->sql
+       '(select ((~ f id) (~ f url) (~ t plugin))
+		(from ((as feed f)
+		       (inner-join (as feed_type t)
+				   (on (= (~ f feed_type_id) (~ t id))))
+		       (inner-join (as provider p)
+				   (on (= (~ f provider_id) (~ p id))))))
+		(where (= (~ p name) ?)))))
+    
+    (define insert-sql
+      (duplicate-insert 'feed_summary
+			'(guid)
+			'(id feed_id guid title summary pubDate)))
+    (define max-thread-count 100)
+    (define (error-handler e)
+      (write-error-log (*command-logger*)
+       (call-with-string-output-port (lambda (out) (report-error e out)))))
 
-  (lambda (provider)
-    (define thread-pool (make-thread-pool (min (get-count) max-thread-count)
-					  error-handler))
-    (define (task feed-id url plugin)
-      (define conn (make-dbi-connection))
-      (define stmt (dbi-prepared-statement conn  insert-sql))
-      (define id-generator (lambda () (generator conn 'feed_summary)))
-      (lambda ()
-	(define process-feed
-	  (eval 'process-feed
-		(environment (read (open-string-input-port plugin)))))
-	(write-debug-log (*command-logger*) "Retrieving feed from ~a" url)
-	(let*-values (((server path) (url-server&path url))
-		      ((s h b) (http-get server path
-				 :secure? (string-prefix? "https" url))))
-	  (for-each (lambda (item)
-		      (let ((id (id-generator)))
-			(write-debug-log (*command-logger*)
-			  "SQL ~a ~a" insert-sql (cons* id feed-id item))
-			(apply dbi-execute! stmt id feed-id item)))
-		    (process-feed b)))
-	(dbi-connection-commit! conn)
-	(repeal-dbi-connection conn)))
-    (dbi-do-fetch! (v (dbi-execute-query! select-stmt provider))
-      (thread-pool-push-task! thread-pool
-        (task (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))))
-    (thread-pool-wait-all! thread-pool)))
+    (lambda (provider)
+      (define (get-count)
+	(call-with-dbi-connection
+	 (lambda (dbi)
+	   (define count-stmt (dbi-prepared-statement dbi count-sql))
+	   (let ((q (dbi-execute-query! count-stmt)))
+	  (vector-ref (dbi-fetch! q) 0)))))
+      (define thread-pool (make-thread-pool (min (get-count) max-thread-count)
+					    error-handler))
+      (call-with-dbi-connection
+       (lambda (dbi)
+	 (define select-stmt (dbi-prepared-statement dbi select-sql))
+	 (define (task feed-id url plugin)
+	   (lambda ()
+	     (write-debug-log (*command-logger*) "Task for ~a" url)
+	     (call-with-dbi-connection
+	      (lambda (conn)
+		(define stmt (dbi-prepared-statement conn  insert-sql))
+		(define id-generator (lambda () (generator conn 'feed_summary)))
+		(define process-feed
+		  (eval 'process-feed
+			(environment (read (open-string-input-port plugin)))))
+		(write-debug-log (*command-logger*)
+				 "Retrieving feed from ~a" url)
+		(let*-values (((server path) (url-server&path url))
+			      ((s h b) (http-get server path
+					:secure? (string-prefix? "https" url))))
+		  (for-each (lambda (item)
+			      (let ((id (id-generator)))
+				(write-debug-log (*command-logger*)
+				  "SQL ~a ~s"
+				  insert-sql (cons* id feed-id item))
+				(apply dbi-execute! stmt id feed-id item)))
+			    (process-feed b)))
+		(dbi-connection-commit! conn)))))
+	 (dbi-do-fetch! (v (dbi-execute-query! select-stmt provider))
+	   (thread-pool-push-task! thread-pool
+	     (task (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))))))
+      (thread-pool-wait-all! thread-pool))))
 
 (define-record-type provider (fields name))
-(define (generate-retrieve-provider dbi)
-  (define select-sql "select name from provider")
-  (define select-stmt (dbi-prepared-statement dbi select-sql))
-  (lambda ()
-    (dbi-query-map (dbi-execute-query! select-stmt)
-      (lambda (query) (make-provider (vector-ref query 0))))))
+(define (news-reader-retrieve-provider)
+  (call-with-dbi-connection
+   (lambda (dbi)
+     (define select-sql "select name from provider")
+     (define select-stmt (dbi-prepared-statement dbi select-sql))
+     (dbi-query-map (dbi-execute-query! select-stmt)
+	(lambda (query) (make-provider (vector-ref query 0)))))))
     
 (define-record-type feed-summary
   (fields name link title summary created-date))
-(define (generate-retrieve-summary dbi)
-  (define select-sql
-    (ssql->sql
-     '(select ((~ p name) (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
-	(from ((as feed_summary s)
-	       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
-	       (inner-join (as provider p)
-			   (on (= (~ p id) (~ f provider_id))))))
-	(where (= (~ p name) ?))
-	(order-by ((~ s pubDate) desc))
-	(limit ?)
-	(offset ?))))
-  (define select-stmt (dbi-prepared-statement dbi select-sql))
-  (lambda (provider limit offset)
-    (dbi-query-map (dbi-execute-query! select-stmt provider limit offset)
-      (lambda (query)
-	(apply make-feed-summary (vector->list query))))))
+(define news-reader-retrieve-summary
+  (let ()
+    (define select-sql
+      (ssql->sql
+       '(select ((~ p name) (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
+		(from ((as feed_summary s)
+		       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
+		       (inner-join (as provider p)
+				   (on (= (~ p id) (~ f provider_id))))))
+		(where (= (~ p name) ?))
+		(order-by ((~ s pubDate) desc))
+		(limit ?)
+		(offset ?))))
+    (lambda (provider limit offset)
+      (call-with-dbi-connection
+       (lambda (dbi)
+	 (define select-stmt (dbi-prepared-statement dbi select-sql))
+	 (dbi-query-map (dbi-execute-query! select-stmt provider limit offset)
+	   (lambda (query)
+	     (apply make-feed-summary (vector->list query)))))))))
 )

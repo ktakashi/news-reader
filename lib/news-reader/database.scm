@@ -36,13 +36,18 @@
 	    dbi-prepared-statement
 	    call-with-dbi-connection)
     (import (rnrs)
+	    (rnrs eval)
 	    (dbi)
 	    (news-reader constants)
 	    (maquette connection))
 
-;; TODO make this configurable
+(define max-connection
+  (let-values (((driver op alist) (dbi-parse-dsn +dsn+)))
+    (eval 'max-connection
+	  (environment `(news-reader ,(string->symbol driver))))))
+
 (define *connection-pool*
-  (make-maquette-connection-pool 10 +dsn+ :auto-commit? #f 
+  (make-maquette-connection-pool max-connection +dsn+ :auto-commit? #f 
 				 :username "news_reader"
 				 :password "news_reader"))
     

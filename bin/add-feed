@@ -7,19 +7,16 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 
 (import (rnrs)
 	(news-reader commands)
-	(news-reader database)
 	(match)
 	(rfc http)
 	(util logging)
 	(dbi))
 
-(define dbi-conn (make-dbi-connection))
-(define add-feed (generate-add-feed dbi-conn))
-
 (define (check-url url)
   (guard (e (else
 	     (error-log console-logger (format "Server not found: ~a" url))
 	     (exit -1)))
+    (debug-log console-logger (format "Check for existence: ~a" url))
     (let*-values (((server path) (url-server&path url))
 		  ((status header body) (http-get server path)))
       (unless (string=? status "200")
@@ -40,11 +37,10 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
       ((provider url) (add (list provider url "RSS 2.0")))
       ((provider url type)
        (check-url url)
-       (add-feed provider url type))
+       (news-reader-add-feed provider url type))
       (_ (usage))))
   (when (null? (cdr args)) (usage))
   (*command-logger* console-logger)
-  (add (cdr args))
-  (dbi-connection-commit! dbi-conn))
+  (add (cdr args)))
 
 

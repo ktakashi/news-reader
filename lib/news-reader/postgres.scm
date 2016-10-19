@@ -29,12 +29,19 @@
 ;;;  
 
 (library (news-reader postgres)
-    (export generator)
+    (export dialect-procedures
+	    max-connection)
     (import (rnrs)
 	    (sagittarius)
 	    (maquette connection)
+	    (text sql)
+	    (srfi :13)
 	    (dbi))
 
+(define max-connection 10);; for now, we need to get this from configuration
+    
+(define (dialect-procedures)
+  (values generator duplicate-insert))
 ;; PostgreSQL uses sequence to generate id
 ;; the name must be `table_name`_seq
 (define (generator conn table)
@@ -45,7 +52,16 @@
       (let ((r (vector-ref (dbi-fetch! q) 0)))
 	(dbi-close q)
 	r))))
-  
+
+;; duplicate-insert
+;; if the insert statement violates unique constraint, then ignores the
+;; insertion.
+;; on PostgreSQL using conflict on ignore
+(define (duplicate-insert table uniques columns)
+  (string-append
+   (ssql->sql
+    `(insert-into ,table ,columns (values ,(map (lambda (c) '?) columns))))
+   " ON CONFLICT (" (string-join (map symbol->string uniques)) ") DO NOTHING"))
 
 )
 

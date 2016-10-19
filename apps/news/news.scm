@@ -71,11 +71,8 @@
     (extract)))
 
 (define (retrieve-providers req)
-  (call-with-dbi-connection
-   (lambda (dbi-conn)
-     (define provider-retriever (generate-retrieve-provider dbi-conn))
-     (let ((names (map provider-name (provider-retriever))))
-       (values 200 'application/json (json->string names))))))
+  (let ((names (map provider-name (news-reader-retrieve-provider))))
+    (values 200 'application/json (json->string names))))
 
 (define (utf8->integer u8)
   (let ((v (utf8->string u8)))
@@ -88,27 +85,25 @@
 (define retrieve-summary
   (cuberteria-object-mapping-handler <limit&offset>
     (lambda (limit&offet req)
-      (call-with-dbi-connection
-       (lambda (dbi-conn)
-	 (define summary-retriever (generate-retrieve-summary dbi-conn))
-	 (define (->array summary)
-	   `#((link . ,(feed-summary-link summary))
-	      (title . ,(feed-summary-title summary))
-	      (summary . ,(feed-summary-summary summary))
-	      (created . ,(string-append
-			   (date->string
-			    (time-utc->date (feed-summary-created-date summary))
-			    "~5")
-			   "Z"))))
-	 (with-path-variable (#/summary\/(.+)/ (http-request-path req))
-	    ((provider #f))
-	  (if provider
-	      (let ((summaries (summary-retriever provider
-						  (~ limit&offet 'limit)
-						  (~ limit&offet 'offset))))
-		(values 200 'application/json
-			(json->string (map ->array summaries))))
-	      (values 404 'text/plain "Not found"))))))))
+      (define (->array summary)
+	`#((link . ,(feed-summary-link summary))
+	   (title . ,(feed-summary-title summary))
+	   (summary . ,(feed-summary-summary summary))
+	   (created . ,(string-append
+			(date->string
+			 (time-utc->date (feed-summary-created-date summary))
+			 "~5")
+			"Z"))))
+      (with-path-variable (#/summary\/(.+)/ (http-request-path req))
+	((provider #f))
+	(if provider
+	    (let ((summaries (news-reader-retrieve-summary
+			      provider
+			      (~ limit&offet 'limit)
+			      (~ limit&offet 'offset))))
+	      (values 200 'application/json
+		      (json->string (map ->array summaries))))
+	    (values 404 'text/plain "Not found"))))))
 	  
 (define (mount-paths)
   `(

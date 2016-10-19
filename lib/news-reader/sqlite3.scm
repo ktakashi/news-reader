@@ -29,14 +29,19 @@
 ;;;
 
 (library (news-reader sqlite3)
-  (export generator)
+  (export dialect-procedures
+	  max-connection)
   (import (rnrs)
 	  (rnrs mutable-pairs)
 	  (sagittarius)
 	  (maquette connection)
 	  (dbi)
+	  (srfi :13)
 	  (srfi :18))
 
+  (define max-connection 1)
+  (define (dialect-procedures) (values generator duplicate-insert))
+  
   ;; in our table model, we don't use autoincrement keyword for
   ;; simplicity of SQL script. So what we do here is basically
   ;; manual sequence management.
@@ -78,6 +83,11 @@
 	    (mutex-unlock! (car p))
 	    r)))))
 
-
+  ;; On SQLite3 we use insert or ignore
+  (define (duplicate-insert table uniques columns)
+    (format "INSERT OR IGNORE INTO ~a (~a) VALUES (~a)"
+	    table
+	    (string-join (map symbol->string columns) ", ")
+	    (string-join (map (lambda (c) "?") columns) ", ")))
   )
 
