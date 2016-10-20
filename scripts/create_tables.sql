@@ -10,7 +10,8 @@ create table feed (
        id integer primary key,
        provider_id integer not null,
        feed_type_id integer not null,
-       url varchar(1024) unique
+       title varchar(255) not null,
+       url varchar(1024) not null unique,
 );
 
 create table feed_summary (

@@ -42,8 +42,7 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 		(let ((n (provider-name p)))
 		  (info-log logger (format "Processing feed for ~a" n))
 		  (news-reader-process-feed n)))
-	      (retrieve-provider))
-    (dbi-commit! dbi-conn))
+	      (news-reader-retrieve-provider)))
 
   (define (gen-add-feed provider)
     (lambda (p e)

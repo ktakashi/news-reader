@@ -20,14 +20,14 @@
       <div ng-app="news" id="news" class="news-container">
 	<div ng-controller="providerCtrl" ng-cloak class="feeds-wrapper">
 	  <div ng-repeat="(provider, summary) in summaries" class="feeds">
-	    <h2 class="provider">{{provider}}</h2>
+	    <h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
 	    <div class="feed-container">
 	      <div ng-repeat="s in summary" class="feed">
 		<h3 class="title">
 		  <a ng-click="showLink($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
 		</h3>
 		<div class="summary">{{s.summary}}</div>
-		<div class="published">{{s.created | date : longDate}}</div>
+		<div class="published">{{s.feed_name}}, {{s.created | date : longDate}}</div>
 	      </div>
 	    </div>
 	  </div>
@@ -38,15 +38,17 @@
 var news = angular.module('news', ['ngMaterial']);
 
 news.controller('providerCtrl', function($scope, $http, $mdDialog) {
-    $scope.providers = [];
+    $scope.providers = {};
     $scope.summaries = {};
+    $scope.urls = {};
     $http.get("/news/providers").
 	then(function (response) {
 	    $scope.providers = response.data;
 	    $scope.providers.forEach(function (provider) {
-		$http.get("/news/summary/" + provider).
+		$http.get("/news/summary/" + provider.name).
 		    then(function (response) {
-			$scope.summaries[provider] = response.data;
+			$scope.summaries[provider.name] = response.data;
+			$scope.urls[provider.name] = provider.url
 		    });
 	    });
 	});

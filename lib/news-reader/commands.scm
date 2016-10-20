@@ -36,8 +36,10 @@
 	  news-reader-retrieve-summary
 	  ;; Should we move this somewhere?
 	  provider-name
+	  provider-url
 	  feed-summary-name
 	  feed-summary-link
+	  feed-summary-feed-name
 	  feed-summary-title
 	  feed-summary-summary
 	  feed-summary-created-date
@@ -88,50 +90,71 @@
     (eval '(dialect-procedures)
 	  (environment `(news-reader ,(string->symbol driver))))))
 
-(define (news-reader-add-provider name url)
-  (call-with-dbi-connection
-   (lambda (dbi)
-     (let ((stmt (dbi-prepared-statement dbi 
-		  "insert into provider (id, name, url) values (?, ?, ?)"))
-	   (id (generator dbi 'provider)))
-       (write-info-log (*command-logger*) "Adding provider ~a" name)
-       (dbi-execute! stmt id name url)
-       (dbi-commit! stmt)))))
+(define news-reader-add-provider
+  (let ()
+    (define insert-sql
+      (duplicate-insert 'provider '(name) '(id name url)))
+    (lambda (name url)
+      (call-with-dbi-connection
+       (lambda (dbi)
+	 (let ((stmt (dbi-prepared-statement dbi insert-sql))
+	       (id (generator dbi 'provider)))
+	   (write-info-log (*command-logger*) "Adding provider ~a" name)
+	   (dbi-execute! stmt id name url)
+	   (dbi-commit! stmt)))))))
 
 (define news-reader-add-feed
   (let ()
     (define sql
-      (ssql->sql
-       '(insert-into feed (id provider_id feed_type_id url)
-		     (values (?
-			      (select (id) (from provider) (where (= name ?)))
-			      (select (id) (from feed_type) (where (= name ?)))
-			      ?)))))
+      (duplicate-insert 'feed '(url) '(id provider_id feed_type_id title url)))
+    (define feed-type-sql "select id, plugin from feed_type where name = ?")
+    (define provider-id-sql "select id from provider where name = ?")
+    (define (feed-type-info conn name)
+      (define stmt (dbi-prepared-statement conn feed-type-sql))
+      (let ((q (dbi-execute-query! stmt name)))
+	(cond ((dbi-fetch! q) =>
+	       (lambda (v)
+		 (dbi-close q)
+		 (values (vector-ref v 0) (vector-ref v 1))))
+	      (else (dbi-close q) (error 'add-feed "unknown feed type" name)))))
+    (define (get-provider-id conn name)
+      (define stmt (dbi-prepared-statement conn provider-id-sql))
+      (let ((q (dbi-execute-query! stmt name)))
+	(cond ((dbi-fetch! q) =>
+	       (lambda (v)
+		 (dbi-close q)
+		 (vector-ref v 0)))
+	      (else (dbi-close q) (error 'add-feed "unknown provider" name)))))
+
+    (define (retrieve-feed-title xml plugin)
+      (define feed-title
+	(eval 'feed-title (environment (read (open-string-input-port plugin)))))
+      (feed-title xml))
+    
     (lambda (provider url type)
-      (call-with-dbi-connection
-       (lambda (dbi)
-	 (define stmt (dbi-prepared-statement dbi sql))
-	 (define id (generator dbi 'feed))
-	 (write-info-log (*command-logger*)
-			 "Adding feed for provider ~a (~a)" provider url)
-	 (write-debug-log (*command-logger*)
-			  "SQL ~a (~a ~a ~a ~a)" sql id provider url type)
-	 (dbi-execute! stmt id provider type url)
-	 (dbi-commit! stmt))))))
+      (let*-values (((server path) (url-server&path url))
+		    ((status header body)
+		     (http-get server path
+			       :secure? (string-prefix? "https" url))))
+	(unless (string=? status "200") (error 'add-feed "invalid feed" url))
+	(call-with-dbi-connection
+	 (lambda (dbi)
+	   (define-values (feed-type-id plugin) (feed-type-info dbi type))
+	   (define provider-id (get-provider-id dbi provider))
+	   (define title (retrieve-feed-title body plugin))
+	   (define stmt (dbi-prepared-statement dbi sql))
+	   (define id (generator dbi 'feed))
+	   (write-info-log (*command-logger*)
+			   "Adding feed for provider ~a (~a)" provider url)
+	   (write-debug-log (*command-logger*)
+			    "SQL ~a (~a ~s ~s ~s ~a)"
+			    sql id provider type title url)
+	   (dbi-execute! stmt id provider-id feed-type-id title url)
+	   (dbi-commit! stmt)))))))
 
 (define news-reader-process-feed
   (let ()
-    (define count-sql "select count(*) from feed")
-    (define select-sql
-      (ssql->sql
-       '(select ((~ f id) (~ f url) (~ t plugin))
-		(from ((as feed f)
-		       (inner-join (as feed_type t)
-				   (on (= (~ f feed_type_id) (~ t id))))
-		       (inner-join (as provider p)
-				   (on (= (~ f provider_id) (~ p id))))))
-		(where (= (~ p name) ?)))))
-    
+    (define count-sql "select count(*) from feed")    
     (define insert-sql
       (duplicate-insert 'feed_summary
 			'(guid)
@@ -140,7 +163,15 @@
     (define (error-handler e)
       (write-error-log (*command-logger*)
        (call-with-string-output-port (lambda (out) (report-error e out)))))
-
+    (define feed-info-select-sql
+      (ssql->sql
+       '(select ((~ f id) (~ f url) (~ t plugin) (~ t id))
+		(from ((as feed f)
+		       (inner-join (as feed_type t)
+				   (on (= (~ f feed_type_id) (~ t id))))
+		       (inner-join (as provider p)
+				   (on (= (~ f provider_id) (~ p id))))))
+		(where (= (~ p name) ?)))))
     (lambda (provider)
       (define (get-count)
 	(call-with-dbi-connection
@@ -152,7 +183,7 @@
 					    error-handler))
       (call-with-dbi-connection
        (lambda (dbi)
-	 (define select-stmt (dbi-prepared-statement dbi select-sql))
+	 (define select-stmt (dbi-prepared-statement dbi feed-info-select-sql))
 	 (define (task feed-id url plugin)
 	   (lambda ()
 	     (write-debug-log (*command-logger*) "Task for ~a" url)
@@ -181,22 +212,23 @@
 	     (task (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))))))
       (thread-pool-wait-all! thread-pool))))
 
-(define-record-type provider (fields name))
+(define-record-type provider (fields name url))
 (define (news-reader-retrieve-provider)
   (call-with-dbi-connection
    (lambda (dbi)
-     (define select-sql "select name from provider")
+     (define select-sql "select name, url from provider")
      (define select-stmt (dbi-prepared-statement dbi select-sql))
      (dbi-query-map (dbi-execute-query! select-stmt)
-	(lambda (query) (make-provider (vector-ref query 0)))))))
+	(lambda (query) (apply make-provider (vector->list query)))))))
     
 (define-record-type feed-summary
-  (fields name link title summary created-date))
+  (fields name feed-name link title summary created-date))
 (define news-reader-retrieve-summary
   (let ()
     (define select-sql
       (ssql->sql
-       '(select ((~ p name) (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
+       '(select ((~ p name) (~ f title)
+		 (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
 		(from ((as feed_summary s)
 		       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
 		       (inner-join (as provider p)

@@ -29,16 +29,21 @@
 ;;;
 
 (library (news-reader rss2)
-  (export process-feed)
+  (export process-feed
+	  feed-title)
   (import (rnrs)
 	  (net rss)
 	  (text sxml ssax)
 	  (srfi :19))
 
-(define (process-feed xml)
+(define (xml->rss xml)
   (define sxml (ssax:xml->sxml (open-string-input-port xml) '()))
-  (define rss (sxml->rss-object sxml))
-  (define item (rss-channel-item (rss-rss-channel rss)))
+  (sxml->rss-object sxml))
+
+(define (process-feed xml)
+  (define rss (xml->rss xml))
+  (define channel (rss-rss-channel rss))
+  (define item (rss-channel-item channel))
   (define (get-content r) (or (and (not r) "") (rss-simple-content r)))
   (define (get-date r)
     (or (and (not r) '()) (date->time-utc (rss-simple-content r))))
@@ -47,5 +52,9 @@
 	       (get-content (rss-item-title item))
 	       (get-content (rss-item-description item))
 	       (get-date (rss-item-pub-date item)))) item))
-  
+
+(define (feed-title xml)
+  (define rss (xml->rss xml))
+  (define channel (rss-rss-channel rss))
+  (rss-simple-content (rss-channel-title channel)))
   )

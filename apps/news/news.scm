@@ -71,7 +71,10 @@
     (extract)))
 
 (define (retrieve-providers req)
-  (let ((names (map provider-name (news-reader-retrieve-provider))))
+  (define (->array provider)
+    `#((name . ,(provider-name provider))
+       (url . ,(provider-url provider))))
+  (let ((names (map ->array (news-reader-retrieve-provider))))
     (values 200 'application/json (json->string names))))
 
 (define (utf8->integer u8)
@@ -87,6 +90,7 @@
     (lambda (limit&offet req)
       (define (->array summary)
 	`#((link . ,(feed-summary-link summary))
+	   (feed_name . ,(feed-summary-feed-name summary))
 	   (title . ,(feed-summary-title summary))
 	   (summary . ,(feed-summary-summary summary))
 	   (created . ,(string-append

@@ -12,16 +12,6 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
 	(util logging)
 	(dbi))
 
-(define (check-url url)
-  (guard (e (else
-	     (error-log console-logger (format "Server not found: ~a" url))
-	     (exit -1)))
-    (debug-log console-logger (format "Check for existence: ~a" url))
-    (let*-values (((server path) (url-server&path url))
-		  ((status header body) (http-get server path)))
-      (unless (string=? status "200")
-	(error-log console-logger (format "Got status ~a for ~a" status url))
-	(exit -1)))))
 
 (define console-logger
   (make-logger +debug-level+ (make-appender "[~w5] [~l] ~m")))
@@ -35,9 +25,7 @@ exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
   (define (add args)
     (match args
       ((provider url) (add (list provider url "RSS 2.0")))
-      ((provider url type)
-       (check-url url)
-       (news-reader-add-feed provider url type))
+      ((provider url type) (news-reader-add-feed provider url type))
       (_ (usage))))
   (when (null? (cdr args)) (usage))
   (*command-logger* console-logger)
