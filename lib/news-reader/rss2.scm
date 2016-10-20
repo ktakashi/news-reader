@@ -46,7 +46,7 @@
   (define item (rss-channel-item channel))
   (define (get-content r) (or (and (not r) "") (rss-simple-content r)))
   (define (get-date r)
-    (or (and (not r) '()) (date->time-utc (rss-simple-content r))))
+    (or (and (not r) '()) (rss-simple-content r)))
   (map (lambda (item)
 	 (list (get-content (rss-item-guid item))
 	       (get-content (rss-item-title item))
