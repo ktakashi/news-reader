@@ -113,18 +113,14 @@
       (define stmt (dbi-prepared-statement conn feed-type-sql))
       (let ((q (dbi-execute-query! stmt name)))
 	(cond ((dbi-fetch! q) =>
-	       (lambda (v)
-		 (dbi-close q)
-		 (values (vector-ref v 0) (vector-ref v 1))))
-	      (else (dbi-close q) (error 'add-feed "unknown feed type" name)))))
+	       (lambda (v) (values (vector-ref v 0) (vector-ref v 1))))
+	      (else (error 'add-feed "unknown feed type" name)))))
     (define (get-provider-id conn name)
       (define stmt (dbi-prepared-statement conn provider-id-sql))
       (let ((q (dbi-execute-query! stmt name)))
 	(cond ((dbi-fetch! q) =>
-	       (lambda (v)
-		 (dbi-close q)
-		 (vector-ref v 0)))
-	      (else (dbi-close q) (error 'add-feed "unknown provider" name)))))
+	       (lambda (v)(vector-ref v 0)))
+	      (else (error 'add-feed "unknown provider" name)))))
 
     (define (retrieve-feed-title xml plugin)
       (define feed-title
