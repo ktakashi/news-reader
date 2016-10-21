@@ -87,6 +87,8 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
 	});
     };
     $scope.load_summary = function(provider) {
+	// only for UX, it's better to see something is working...
+	$scope.summaries[provider] = {};
 	$http.get("/news/summary/" + provider).
 	    then(function (response) {
 		$scope.summaries[provider] = response.data;
