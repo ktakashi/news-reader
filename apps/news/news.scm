@@ -42,12 +42,14 @@
 	  (sagittarius regex)
 	  (sagittarius object)
 	  (sagittarius)
+	  (rfc uri)
 	  (news-reader commands)
 	  (news-reader database)
 	  (srfi :19))
 
 (define style-loader (cuberteria-resource-loader 'text/css "./css"))
 (define template-loader (cuberteria-resource-loader 'text/html "./templates"))
+(define image-loader (cuberteria-resource-loader 'text/html "./images"))
   
 (define-syntax with-path-variable
   (syntax-rules ()
@@ -102,7 +104,7 @@
 	((provider #f))
 	(if provider
 	    (let ((summaries (news-reader-retrieve-summary
-			      provider
+			      (uri-decode-string provider :cgi-decode #t)
 			      (~ limit&offet 'limit)
 			      (~ limit&offet 'offset))))
 	      (values 200 'application/json
@@ -115,6 +117,7 @@
     ((GET) #/summary\/.+/ ,retrieve-summary)
     ((GET) #/styles/      ,style-loader)
     ((GET) #/html/        ,template-loader)
+    ((GET) #/img/         ,image-loader)
     ))
 
 (define (support-methods) '(GET))
