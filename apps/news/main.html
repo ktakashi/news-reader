@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8"/>
     <title>News reader</title>
+    <link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc4/angular-material.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
@@ -20,7 +21,15 @@
       <div ng-app="news" id="news" class="news-container">
 	<div ng-controller="providerCtrl" ng-cloak class="feeds-wrapper">
 	  <div ng-repeat="(provider, summary) in summaries" class="feeds">
-	    <h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
+	    <md-toolbar style="min-height: 32px !important">
+	      <div class="md-toolbar-tools" style="height: 32px !important">
+		<h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
+		<span flex></span>
+		<md-button class="md-icon-button" ng-click="load_summary(provider)">
+		  <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
+		</md-button>
+	      </div>
+	    </md-toolbar>
 	    <div class="feed-container">
 	      <div ng-repeat="s in summary" class="feed">
 		<h3 class="title">
@@ -30,6 +39,16 @@
 		<div class="published">{{s.feed_name}}, {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
 	      </div>
 	    </div>
+	  </div>
+	</div>
+      </div>
+      <div id="footer" class="footer">
+	<div id="copyrights" class="copyrights">
+	  <div class="copyright">
+	    Icons created by <a href="http://www.bogdanrosu.com/">Bogdan Rosu Creative</a>
+	  </div>
+	  <div class="copyright">
+	    &copy; 2016 Takashi Kato
 	  </div>
 	</div>
       </div>
@@ -45,11 +64,8 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
 	then(function (response) {
 	    $scope.providers = response.data;
 	    $scope.providers.forEach(function (provider) {
-		$http.get("/news/summary/" + provider.name).
-		    then(function (response) {
-			$scope.summaries[provider.name] = response.data;
-			$scope.urls[provider.name] = provider.url
-		    });
+		$scope.urls[provider.name] = provider.url;
+		$scope.load_summary(provider.name);
 	    });
 	});
     $scope.showLink = function (ev, link, title) {
@@ -70,6 +86,12 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
 	    }
 	});
     };
+    $scope.load_summary = function(provider) {
+	$http.get("/news/summary/" + provider).
+	    then(function (response) {
+		$scope.summaries[provider] = response.data;
+	    });
+    }
 });
 
 news.controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {

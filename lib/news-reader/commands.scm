@@ -216,7 +216,7 @@
 (define (news-reader-retrieve-provider)
   (call-with-dbi-connection
    (lambda (dbi)
-     (define select-sql "select name, url from provider")
+     (define select-sql "select name, url from provider order by name")
      (define select-stmt (dbi-prepared-statement dbi select-sql))
      (dbi-query-map (dbi-execute-query! select-stmt)
 	(lambda (query) (apply make-provider (vector->list query)))))))
