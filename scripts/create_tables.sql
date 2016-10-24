@@ -10,6 +10,7 @@ create table feed (
        id integer primary key,
        provider_id integer not null,
        feed_type_id integer not null,
+       language_id integer not null,
        title varchar(255) not null,
        url varchar(1024) not null unique,
 );
@@ -27,4 +28,11 @@ create table feed_type (
        id integer primary key,
        name varchar(10) not null unique,
        plugin varchar(255) not null unique
+);
+
+create table languages (
+       id integer primary key,
+       name  varchar(100) not null unique,
+       code3 char(3) not null unique,
+       code2 char(2)
 );
