@@ -2,7 +2,7 @@ insert into feed_type (id, name, plugin)
 values (1, 'RSS 2.0', '(news-reader rss2)');
 
 insert into languages (id, code3, code2, name)
-values (0,'xxx','','Unknown')
+values (0,'xxx','','Unknown'),
        (1,'aar','aa','Afar'),
        (2,'abk','ab','Abkhazian'),
        (3,'ace','','Achinese'),
