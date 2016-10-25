@@ -62,7 +62,7 @@
               (reload-all-webapp)
               (run-server port config remote-port shared-queue)))))
   (thread-start! server-thread)
-  (if remote-port
+  (if (and remote-port (not (string=? "" remote-port)))
     (let-values
       (((repl socket) (make-remote-repl remote-port)))
       (thread-start! (make-thread repl))

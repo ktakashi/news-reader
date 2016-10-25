@@ -11,6 +11,7 @@ TOUCH_LIBS=lib/news-reader/constants.scm lib/news-reader/database.scm
 
 PORT ?= 8080
 SHUTDOWN_PORT ?= 8081
+REMOTE_PORT ?= 
 SAGITTARIUS ?= sagittarius
 
 PSQL ?= psql
@@ -51,7 +52,7 @@ testdata: sqlite3
 run:
 	@echo Starting news-reader on $(PORT)
 	SAGITTARIUS='$(SAGITTARIUS)' ./jobs/process-feeds &
-	$(SAGITTARIUS) run.scm -p$(PORT) -s$(SHUTDOWN_PORT) &
+	$(SAGITTARIUS) run.scm -p$(PORT) -s$(SHUTDOWN_PORT) -r$(REMOTE_PORT) &
 
 stop:
 	@echo Stoppng news-reader

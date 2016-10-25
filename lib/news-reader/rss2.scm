@@ -30,7 +30,7 @@
 
 (library (news-reader rss2)
   (export process-feed
-	  feed-title)
+	  feed-info)
   (import (rnrs)
 	  (net rss)
 	  (text sxml ssax)
@@ -39,12 +39,12 @@
 (define (xml->rss xml)
   (define sxml (ssax:xml->sxml (open-string-input-port xml) '()))
   (sxml->rss-object sxml))
+(define (get-content r) (or (and (not r) "") (rss-simple-content r)))
 
 (define (process-feed xml)
   (define rss (xml->rss xml))
   (define channel (rss-rss-channel rss))
   (define item (rss-channel-item channel))
-  (define (get-content r) (or (and (not r) "") (rss-simple-content r)))
   (define (get-date r)
     (or (and (not r) '()) (rss-simple-content r)))
   (map (lambda (item)
@@ -53,8 +53,13 @@
 	       (get-content (rss-item-description item))
 	       (get-date (rss-item-pub-date item)))) item))
 
-(define (feed-title xml)
+(define (feed-info xml)
   (define rss (xml->rss xml))
   (define channel (rss-rss-channel rss))
-  (rss-simple-content (rss-channel-title channel)))
+  (define (->iso-code2 code)
+    (and (>= (string-length code) 2)
+	 (substring code 0 2)))
+  (values (rss-simple-content (rss-channel-title channel))
+	  (->iso-code2 (get-content (rss-channel-language channel)))))
+  
   )

@@ -106,7 +106,8 @@
 (define news-reader-add-feed
   (let ()
     (define sql
-      (duplicate-insert 'feed '(url) '(id provider_id feed_type_id title url)))
+      (duplicate-insert 'feed '(url)
+			'(id provider_id feed_type_id language_id title url)))
     (define feed-type-sql "select id, plugin from feed_type where name = ?")
     (define provider-id-sql "select id from provider where name = ?")
     (define (feed-type-info conn name)
@@ -118,13 +119,21 @@
     (define (get-provider-id conn name)
       (define stmt (dbi-prepared-statement conn provider-id-sql))
       (let ((q (dbi-execute-query! stmt name)))
-	(cond ((dbi-fetch! q) =>
-	       (lambda (v)(vector-ref v 0)))
-	      (else (error 'add-feed "unknown provider" name)))))
-
+	(cond ((dbi-fetch! q) => (lambda (v) (vector-ref v 0)))
+	      (else              (error 'add-feed "unknown provider" name)))))
+    (define (get-language-id conn lang)
+      (define sql "select id from languages where code2 = ?")
+      (or (and-let* (( lang )
+		     (q (dbi-execute-query!
+			 (dbi-prepared-statement conn sql) lang))
+		     (v (dbi-fetch! q)))
+	    (vector-ref v 0))
+	  ;; unknown
+	  0))
+    
     (define (retrieve-feed-title xml plugin)
       (define feed-title
-	(eval 'feed-title (environment (read (open-string-input-port plugin)))))
+	(eval 'feed-info (environment (read (open-string-input-port plugin)))))
       (feed-title xml))
     
     (lambda (provider url type)
@@ -137,15 +146,16 @@
 	 (lambda (dbi)
 	   (define-values (feed-type-id plugin) (feed-type-info dbi type))
 	   (define provider-id (get-provider-id dbi provider))
-	   (define title (retrieve-feed-title body plugin))
+	   (define-values (title lang) (retrieve-feed-title body plugin))
 	   (define stmt (dbi-prepared-statement dbi sql))
 	   (define id (generator dbi 'feed))
+	   (define lang-id (get-language-id dbi lang))
 	   (write-info-log (*command-logger*)
 			   "Adding feed for provider ~a (~a)" provider url)
 	   (write-debug-log (*command-logger*)
-			    "SQL ~a (~a ~s ~s ~s ~a)"
-			    sql id provider type title url)
-	   (dbi-execute! stmt id provider-id feed-type-id title url)
+			    "SQL ~a (~a ~s ~s ~a ~s ~a)"
+			    sql id provider type lang-id title url)
+	   (dbi-execute! stmt id provider-id feed-type-id lang-id title url)
 	   (dbi-commit! stmt)))))))
 
 (define news-reader-process-feed
