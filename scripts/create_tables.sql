@@ -12,7 +12,7 @@ create table feed (
        feed_type_id integer not null,
        language_id integer not null,
        title varchar(255) not null,
-       url varchar(1024) not null unique,
+       url varchar(1024) not null unique
 );
 
 create table feed_summary (
