@@ -75,7 +75,8 @@
 (define (retrieve-providers req)
   (define (->array provider)
     `#((name . ,(provider-name provider))
-       (url . ,(provider-url provider))))
+       (url . ,(provider-url provider))
+       (languages . ,(provider-languages provider))))
   (let ((names (map ->array (news-reader-retrieve-provider))))
     (values 200 'application/json (json->string names))))
 
@@ -93,6 +94,7 @@
       (define (->array summary)
 	`#((link . ,(feed-summary-link summary))
 	   (feed_name . ,(feed-summary-feed-name summary))
+	   (language . ,(feed-summary-language summary))
 	   (title . ,(feed-summary-title summary))
 	   (summary . ,(feed-summary-summary summary))
 	   (created . ,(string-append

@@ -37,9 +37,11 @@
 	  ;; Should we move this somewhere?
 	  provider-name
 	  provider-url
+	  provider-languages
 	  feed-summary-name
 	  feed-summary-link
 	  feed-summary-feed-name
+	  feed-summary-language
 	  feed-summary-title
 	  feed-summary-summary
 	  feed-summary-created-date
@@ -223,25 +225,46 @@
 	     (task (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))))))
       (thread-pool-wait-all! thread-pool))))
 
-(define-record-type provider (fields name url))
-(define (news-reader-retrieve-provider)
-  (call-with-dbi-connection
-   (lambda (dbi)
-     (define select-sql "select name, url from provider order by name")
-     (define select-stmt (dbi-prepared-statement dbi select-sql))
-     (dbi-query-map (dbi-execute-query! select-stmt)
-	(lambda (query) (apply make-provider (vector->list query)))))))
+(define-record-type provider (fields name url languages))
+(define news-reader-retrieve-provider
+  (let ()
+    (define language-sql
+      (ssql->sql
+       '(select-distinct ((~ l code2))
+	 (from ((as languages l)
+		(inner-join (as feed f) (on (= (~ f language_id) (~ l id))))
+		(inner-join (as provider p)
+			    (on (= (~ f provider_id) (~ p id))))))
+	 (where (= (~ p id) ?)))))
+    (lambda ()
+      (call-with-dbi-connection
+       (lambda (dbi)
+	 (define select-sql "select id, name, url from provider order by name")
+	 (define select-stmt (dbi-prepared-statement dbi select-sql))
+	 (let ((id&name&urls (dbi-query-map (dbi-execute-query! select-stmt)
+					    vector->list))
+	       (language-stmt (dbi-prepared-statement dbi language-sql)))
+	   (map (lambda (id&name&url)
+		  (let ((id (car id&name&url))
+			(name (cadr id&name&url))
+			(url (caddr id&name&url)))
+		    (make-provider name url
+		      (dbi-query-map (dbi-execute-query! language-stmt id)
+				     (lambda (q) (vector-ref q 0))))))
+		id&name&urls)))))))
     
 (define-record-type feed-summary
-  (fields name feed-name link title summary created-date))
+  (fields name feed-name language link title summary created-date))
 (define news-reader-retrieve-summary
   (let ()
     (define select-sql
       (ssql->sql
-       '(select ((~ p name) (~ f title)
+       '(select ((~ p name) (~ f title) (~ l code2)
 		 (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
 		(from ((as feed_summary s)
 		       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
+		       (inner-join (as languages l)
+				   (on (= (~ l id) (~ f language_id))))
 		       (inner-join (as provider p)
 				   (on (= (~ p id) (~ f provider_id))))))
 		(where (= (~ p name) ?))

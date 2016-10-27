@@ -19,36 +19,44 @@
     <div id="control" class="root-container">
       <h1 class="title">News reader</h1>
       <div ng-app="news" id="news" class="news-container">
-	<div ng-controller="providerCtrl" ng-cloak class="feeds-wrapper">
-	  <div ng-repeat="(provider, summary) in summaries" class="feeds">
-	    <md-toolbar style="min-height: 32px !important">
-	      <div class="md-toolbar-tools" style="height: 32px !important">
-		<h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
-		<span flex></span>
-		<md-button class="md-icon-button" ng-click="load_summary(provider)">
-		  <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
-		</md-button>
-	      </div>
-	    </md-toolbar>
-	    <div class="feed-container">
-	      <div ng-repeat="s in summary" class="feed">
-		<h3 class="title">
-		  <a ng-click="showLink($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
-		</h3>
-		<div class="summary">{{s.summary}}</div>
-		<div class="published">{{s.feed_name}}, {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
+	<div ng-controller="providerCtrl" ng-cloak>
+    	  <div class="languages" ng-if="is_multi_lingual()">
+	    lang:
+	    <a href="javascript:void(0)" class="languages" ng-click="hide_by_lang('*')">all</a>
+	    <a ng-repeat="(lang, dummy) in languages" class="languages"
+	       href="javascript:void(0)" ng-click="hide_by_lang(lang)">{{lang}}</a>
+	  </div>
+	  <div class="feeds-wrapper">
+	    <div ng-hide="hide_provider[provider]" ng-repeat="(provider, summary) in summaries" class="feeds">
+	      <md-toolbar style="min-height: 32px !important">
+		<div class="md-toolbar-tools" style="height: 32px !important">
+		  <h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
+		  <span flex></span>
+		  <md-button class="md-icon-button" ng-click="load_summary(provider)">
+		    <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
+		  </md-button>
+		</div>
+	      </md-toolbar>
+	      <div class="feed-container">
+		<div ng-repeat="s in summary" class="feed" ng-hide="languages[s.language]">
+		  <h3 class="title">
+		    <a ng-click="showLink($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
+		  </h3>
+		  <div class="summary">{{s.summary}}</div>
+		  <div class="published">{{s.feed_name}}, {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
+		</div>
 	      </div>
 	    </div>
 	  </div>
 	</div>
-      </div>
-      <div id="footer" class="footer">
-	<div id="copyrights" class="copyrights">
-	  <div class="copyright">
-	    Icons created by <a href="http://www.bogdanrosu.com/">Bogdan Rosu Creative</a>
-	  </div>
-	  <div class="copyright">
-	    &copy; 2016 Takashi Kato
+	<div id="footer" class="footer">
+	  <div id="copyrights" class="copyrights">
+	    <div class="copyright">
+	      Icons created by <a href="http://www.bogdanrosu.com/">Bogdan Rosu Creative</a>
+	    </div>
+	    <div class="copyright">
+	      &copy; 2016 Takashi Kato
+	    </div>
 	  </div>
 	</div>
       </div>
@@ -57,14 +65,20 @@
 var news = angular.module('news', ['ngMaterial']);
 
 news.controller('providerCtrl', function($scope, $http, $mdDialog) {
-    $scope.providers = {};
+    $scope.providers = [];
     $scope.summaries = {};
     $scope.urls = {};
+    $scope.languages = {};
+    $scope.hide_provider = {};
     $http.get("/news/providers").
 	then(function (response) {
 	    $scope.providers = response.data;
 	    $scope.providers.forEach(function (provider) {
 		$scope.urls[provider.name] = provider.url;
+		// $scope.hide_provider[provider.name] = false;
+                provider.languages.forEach(function (lang) {
+		    $scope.languages[lang] = false;
+		});
 		$scope.load_summary(provider.name);
 	    });
 	});
@@ -93,7 +107,31 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
 	    then(function (response) {
 		$scope.summaries[provider] = response.data;
 	    });
-    }
+    };
+    $scope.hide_by_lang = function(lang) {
+	$scope.providers.forEach(function(provider) {
+	    if (lang === '*') {
+		$scope.hide_provider[provider.name] = false;
+	    } else {
+		$scope.hide_provider[provider.name] = (provider.languages.indexOf(lang) < 0);
+	    }
+	});
+	for (var key in $scope.languages) {
+	    if (lang === '*') {
+		$scope.languages[key] = false;
+	    } else {
+		$scope.languages[key] = !(key === lang);
+	    }
+	}
+    };
+    $scope.is_multi_lingual = function() {
+	var size = 0;
+	for (var key in $scope.languages) {
+	    size++;
+	}
+	return size > 1;
+	
+    };
 });
 
 news.controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {

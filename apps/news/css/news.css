@@ -1,3 +1,6 @@
+body {
+    background-color: rgb(232, 232, 232);
+}
 
 .root-container {
     
@@ -7,7 +10,6 @@
     font-size: 72px;
     witdh: 100%;
     text-align: center;
-    background-color: rgb(63, 81, 231);
     margin: 0px;
     padding: 10px;
     font-family: "Architects Daughter", "Helvetica Neue", Helvetica, Arial, serif;
@@ -31,6 +33,19 @@
     max-height: 672px;		/* feeds (332px + 2px (border)) * 2 + 4*/
     overflow-y: scroll;
     overflow-x: hidden;
+}
+
+.news-container div.languages {
+    width: 100%;
+    background-color: rgb(68, 98, 255);
+    padding-left: 10px;
+}
+
+.news-container a.languages {
+    display: inline-block;
+    width: 20px;
+    color: white;
+    padding: 2px;
 }
 
 .news-container .feeds {
