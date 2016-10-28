@@ -17,7 +17,7 @@
 
 
 (define *plato-roots* (make-parameter '()))
-(define-constant +default-plato-root+ "/home/takashi/projects/news-reader")
+(define-constant +default-plato-root+ (absolute-path "."))
 (define-constant +stop-commands+ '("stop" "restart"))
 
 ;; paella dispatcher
