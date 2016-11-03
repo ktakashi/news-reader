@@ -143,7 +143,8 @@
 		    ((status header body)
 		     (http-get server path
 			       :secure? (string-prefix? "https" url))))
-	(unless (string=? status "200") (error 'add-feed "invalid feed" url))
+	(unless (string=? status "200")
+	  (error 'add-feed "Feed URL returned non 200 status" status url))
 	(call-with-dbi-connection
 	 (lambda (dbi)
 	   (define-values (feed-type-id plugin) (feed-type-info dbi type))

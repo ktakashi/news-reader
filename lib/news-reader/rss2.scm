@@ -34,6 +34,8 @@
   (import (rnrs)
 	  (net rss)
 	  (text sxml ssax)
+	  (srfi :1)
+	  (srfi :13)
 	  (srfi :19))
 
 (define (xml->rss xml)
@@ -53,11 +55,13 @@
 	  (rss-simple-content guid)
 	  (rss-simple-content (rss-item-link item)))))
   
-  (map (lambda (item)
-	 (list (get-url item)
-	       (get-content (rss-item-title item))
-	       (get-content (rss-item-description item))
-	       (get-date (rss-item-pub-date item)))) item))
+  (filter-map (lambda (item)
+		(let ((title (get-content (rss-item-title item)))
+		      (desc (get-content (rss-item-description item))))
+		  (and (not (or (string-null? title) (string-null? desc)))
+		       (list (get-url item)
+			     title desc
+			     (get-date (rss-item-pub-date item)))))) item))
 
 (define (feed-info xml)
   (define rss (xml->rss xml))
