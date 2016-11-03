@@ -82,8 +82,7 @@
 
 (define (utf8->integer u8)
   (let ((v (utf8->string u8)))
-    (or (string->number v)
-	(error 'limit&offset "invalid value" v))))
+    (or (string->number v) 0)))
 (define-class <limit&offset> (<converter-mixin>)
   ((limit :init-value 50 :converter utf8->integer)
    (offset :init-value 0 :converter utf8->integer)))

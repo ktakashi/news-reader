@@ -250,6 +250,10 @@
     
 (define-record-type feed-summary
   (fields name feed-name language link title summary created-date))
+
+;; TODO should be configurable.
+(define-constant +max-fetch-count+ 50)
+(define (non-negative-fixnum? n) (and (fixnum? n) (not (negative? n))))
 (define news-reader-retrieve-summary
   (let ()
     (define select-sql
@@ -267,10 +271,14 @@
 		(limit ?)
 		(offset ?))))
     (lambda (provider limit offset)
-      (call-with-dbi-connection
-       (lambda (dbi)
-	 (define select-stmt (dbi-prepared-statement dbi select-sql))
-	 (dbi-query-map (dbi-execute-query! select-stmt provider limit offset)
-	   (lambda (query)
-	     (apply make-feed-summary (vector->list query)))))))))
+      (if (and (non-negative-fixnum? limit) (non-negative-fixnum? offset))
+	  (call-with-dbi-connection
+	   (lambda (dbi)
+	     (define select-stmt (dbi-prepared-statement dbi select-sql))
+	     (dbi-query-map (dbi-execute-query! select-stmt provider
+						(min limit +max-fetch-count+)
+						offset)
+		(lambda (query)
+		  (apply make-feed-summary (vector->list query))))))
+	  '()))))
 )
