@@ -1,12 +1,12 @@
 -- create schema feed;
 
-create table provider (
+create table if not exists provider (
        id integer primary key,
        name varchar(255) not null unique,
        url varchar(1024) not null
 );
 
-create table feed (
+create table if not exists feed (
        id integer primary key,
        provider_id integer not null,
        feed_type_id integer not null,
@@ -15,7 +15,7 @@ create table feed (
        url varchar(1024) not null unique
 );
 
-create table feed_summary (
+create table if not exists feed_summary (
        id bigint primary key,
        feed_id integer not null,
        guid varchar(1024) not null unique,
@@ -24,13 +24,13 @@ create table feed_summary (
        pubDate timestamp not null
 );
 
-create table feed_type (
+create table if not exists feed_type (
        id integer primary key,
        name varchar(10) not null unique,
        plugin varchar(255) not null unique
 );
 
-create table languages (
+create table if not exists languages (
        id integer primary key,
        name  varchar(100) not null unique,
        code3 char(3) not null unique,
