@@ -70,6 +70,13 @@ body {
     border: 1px solid;
 }
 
+.feed-container .read-more {
+    text-align: center;
+    border-top: 1px dotted gray;
+    color: gray;
+    padding-top: 10px;
+}
+
 .feeds .feed {
     border-top: 1px solid gray;
     padding-bottom: 5px;
@@ -77,6 +84,10 @@ body {
 }
 
 .feed h3.title {
+    margin-top: 5px;
+}
+
+.feed .published {
     margin-top: 5px;
 }
 

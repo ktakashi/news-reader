@@ -40,10 +40,13 @@
 	      <div class="feed-container">
 		<div ng-repeat="s in summary" class="feed" ng-hide="languages[s.language]">
 		  <h3 class="title">
-		    <a ng-click="showLink($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
+		    <a ng-click="show_link($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
 		  </h3>
 		  <div class="summary">{{s.summary}}</div>
 		  <div class="published">{{s.feed_name}}, {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
+		</div>
+		<div class="read-more" ng-hide="!offsets[provider]">
+		  <span ng-click="read_more(provider, offsets[provider])">Read more</span>
 		</div>
 	      </div>
 	    </div>
@@ -70,6 +73,7 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
     $scope.urls = {};
     $scope.languages = {};
     $scope.hide_provider = {};
+    $scope.offsets = {};
     $http.get("/news/providers").
 	then(function (response) {
 	    $scope.providers = response.data;
@@ -82,7 +86,7 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
 		$scope.load_summary(provider.name);
 	    });
 	});
-    $scope.showLink = function (ev, link, title) {
+    $scope.show_link = function (ev, link, title) {
 	$mdDialog.show({
 	    templateUrl: '/news/html/iframe.html',
 	    parent: angular.element(document.body),
@@ -106,6 +110,18 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
 	$http.get("/news/summary/" + provider).
 	    then(function (response) {
 		$scope.summaries[provider] = response.data;
+		$scope.offsets[provider] = response.data.length;
+	    });
+    };
+    $scope.read_more = function(provider, offset) {
+	$http.get("/news/summary/" + provider + "?offset=" + offset).
+	    then(function (response) {
+		if (response.data.length != 0) {
+		    $scope.summaries[provider] = $scope.summaries[provider].concat(response.data);
+		    $scope.offsets[provider] += response.data.length;
+		} else {
+		    $scope.offsets[provider] = false;
+		}
 	    });
     };
     $scope.hide_by_lang = function(lang) {
