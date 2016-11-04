@@ -175,7 +175,7 @@
        (call-with-string-output-port (lambda (out) (report-error e out)))))
     (define feed-info-select-sql
       (ssql->sql
-       '(select ((~ f id) (~ f url) (~ t plugin) (~ t id))
+       '(select ((~ f id) (~ f url) (~ t plugin) (~ t id) (~ f title))
 		(from ((as feed f)
 		       (inner-join (as feed_type t)
 				   (on (= (~ f feed_type_id) (~ t id))))
@@ -194,9 +194,9 @@
       (call-with-dbi-connection
        (lambda (dbi)
 	 (define select-stmt (dbi-prepared-statement dbi feed-info-select-sql))
-	 (define (task feed-id url plugin)
+	 (define (task feed-id url plugin title)
 	   (lambda ()
-	     (write-debug-log (*command-logger*) "Task for ~a" url)
+	     (write-info-log (*command-logger*) "Procesing feed: ~a" title)
 	     (call-with-dbi-connection
 	      (lambda (conn)
 		(define stmt (dbi-prepared-statement conn  insert-sql))
@@ -219,7 +219,8 @@
 		(dbi-connection-commit! conn)))))
 	 (dbi-do-fetch! (v (dbi-execute-query! select-stmt provider))
 	   (thread-pool-push-task! thread-pool
-	     (task (vector-ref v 0) (vector-ref v 1) (vector-ref v 2))))))
+	     (task (vector-ref v 0) (vector-ref v 1) (vector-ref v 2)
+		   (vector-ref v 4))))))
       (thread-pool-wait-all! thread-pool))))
 
 (define-record-type provider (fields name url languages))
