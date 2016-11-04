@@ -48,7 +48,7 @@
   (define channel (rss-rss-channel rss))
   (define item (rss-channel-item channel))
   (define (get-date r)
-    (or (and (not r) '()) (rss-simple-content r)))
+    (or (and (not r) (current-date)) (rss-simple-content r)))
   (define (get-url item)
     (let ((guid (rss-item-guid item)))
       (if (and guid (rss-guid-permalink? guid))
