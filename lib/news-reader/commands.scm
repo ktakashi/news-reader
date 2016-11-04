@@ -34,6 +34,7 @@
 	  news-reader-process-feed
 	  news-reader-retrieve-provider
 	  news-reader-retrieve-summary
+	  news-reader-update-feed-language
 	  ;; Should we move this somewhere?
 	  provider-name
 	  provider-url
@@ -161,6 +162,16 @@
 			    sql id provider type lang-id title url)
 	   (dbi-execute! stmt id provider-id feed-type-id lang-id title url)
 	   (dbi-commit! stmt)))))))
+
+(define (news-reader-update-feed-language url lang)
+  (call-with-dbi-connection
+   (lambda (dbi)
+     (define stmt
+       (dbi-prepared-statement dbi "update feed set language_id = (select id from languages where code2 = ?) where url = ?"))
+     (write-info-log (*command-logger*) "Updating language of URL(~a) to ~a"
+		     url lang)
+     (dbi-execute! stmt lang url)
+     (dbi-commit! stmt))))
 
 (define news-reader-process-feed
   (let ()
