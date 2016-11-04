@@ -157,11 +157,13 @@ news.controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
 });
 
 function check_frame(iframe) {
-    if (!iframe.contentDocument || !iframe.contentDocument.location) {
-	var parent = iframe.parentNode;
-	parent.removeChild(iframe);
-	parent.innerHTML = '<div>Failed to load: click the title to see on new window</div>';
-    }
+//    var doc = iframe.contentWindow;
+//    console.log(doc);
+//    if (doc.innerText == "") {
+//	var parent = iframe.parentNode;
+//	parent.removeChild(iframe);
+//	parent.innerHTML = '<div>Failed to load: click the title to see on new wndow</div>';
+//    }
 }
 -->
     </script>
