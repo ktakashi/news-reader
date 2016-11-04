@@ -144,7 +144,7 @@
       (let*-values (((server path) (url-server&path url))
 		    ((status header body)
 		     (http-get server path
-			       :secure? (string-prefix? "https" url))))
+			       :secure (string-prefix? "https" url))))
 	(unless (string=? status "200")
 	  (error 'add-feed "Feed URL returned non 200 status" status url))
 	(call-with-dbi-connection
@@ -219,7 +219,10 @@
 				 "Retrieving feed from ~a" url)
 		(let*-values (((server path) (url-server&path url))
 			      ((s h b) (http-get server path
-					:secure? (string-prefix? "https" url))))
+					:secure (string-prefix? "https" url))))
+		  (unless (string=? s "200")
+		    (error 'news-reader-process-feed "Invalid HTTP status"
+			   s h url))
 		  (for-each (lambda (item)
 			      (let ((id (id-generator)))
 				(write-debug-log (*command-logger*)
