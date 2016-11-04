@@ -51,6 +51,7 @@
 	  (rnrs eval)
 	  (news-reader constants)
 	  (news-reader database)
+	  (news-reader config)
 	  (util concurrent)
 	  (text sql)
 	  (rfc http)
@@ -168,7 +169,7 @@
       (duplicate-insert 'feed_summary
 			'(guid)
 			'(id feed_id guid title summary pubDate)))
-    (define max-thread-count 100)
+    (define max-thread-count max-process-feed-threads)
     (define (error-handler e)
       (write-error-log (*command-logger*)
        (call-with-string-output-port (lambda (out) (report-error e out)))))
@@ -252,8 +253,8 @@
 (define-record-type feed-summary
   (fields name feed-name language link title summary created-date))
 
-;; TODO should be configurable.
-(define-constant +max-fetch-count+ 50)
+
+(define +max-fetch-count+ max-feeds)
 (define (non-negative-fixnum? n) (and (fixnum? n) (not (negative? n))))
 (define news-reader-retrieve-summary
   (let ()

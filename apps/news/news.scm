@@ -45,6 +45,7 @@
 	  (rfc uri)
 	  (news-reader commands)
 	  (news-reader database)
+	  (news-reader config)
 	  (srfi :19))
 
 (define style-loader (cuberteria-resource-loader 'text/css "./css"))
@@ -84,7 +85,7 @@
   (let ((v (utf8->string u8)))
     (or (string->number v) 0)))
 (define-class <limit&offset> (<converter-mixin>)
-  ((limit :init-value 50 :converter utf8->integer)
+  ((limit :init-value max-feeds :converter utf8->integer)
    (offset :init-value 0 :converter utf8->integer)))
 
 (define retrieve-summary
