@@ -51,15 +51,17 @@
     (or (and (not r) (current-date)) (rss-simple-content r)))
   (define (get-url item)
     (let ((guid (rss-item-guid item)))
-      (if (and guid (rss-guid-permalink? guid))
-	  (rss-simple-content guid)
-	  (rss-simple-content (rss-item-link item)))))
+      (cond ((and guid (rss-guid-permalink? guid)) (rss-simple-content guid))
+	    ((rss-item-link item) => rss-simple-content)
+	    (else #f))))
   
   (filter-map (lambda (item)
 		(let ((title (get-content (rss-item-title item)))
-		      (desc (get-content (rss-item-description item))))
+		      (desc (get-content (rss-item-description item)))
+		      (url (get-url item)))
 		  (and (not (or (string-null? title) (string-null? desc)))
-		       (list (get-url item)
+		       url
+		       (list url
 			     title desc
 			     (get-date (rss-item-pub-date item)))))) item))
 
