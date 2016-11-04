@@ -8,9 +8,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-route.min.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-resource.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-sanitize.min.js"></script>
     <!-- Angular Material Library -->
     <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc4/angular-material.min.js"></script>
     <link rel="stylesheet" type="text/css" href="/news/styles/news.css" />
@@ -42,7 +40,7 @@
 		  <h3 class="title">
 		    <a ng-click="show_link($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
 		  </h3>
-		  <div class="summary">{{s.summary}}</div>
+		  <div class="summary" ng-bind-html="s.summary"></div>
 		  <div class="published">{{s.feed_name}}, {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
 		</div>
 		<div class="read-more" ng-hide="!offsets[provider]">
@@ -65,7 +63,7 @@
       </div>
     </div>
     <script><!--
-var news = angular.module('news', ['ngMaterial']);
+var news = angular.module('news', ['ngMaterial', 'ngSanitize']);
 
 news.controller('providerCtrl', function($scope, $http, $mdDialog) {
     $scope.providers = [];
@@ -157,6 +155,14 @@ news.controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
 	$mdDialog.cancel();
     }
 });
+
+function check_frame(iframe) {
+    if (!iframe.contentDocument || !iframe.contentDocument.location) {
+	var parent = iframe.parentNode;
+	parent.removeChild(iframe);
+	parent.innerHTML = '<div>Failed to load: click the title to see on new window</div>';
+    }
+}
 -->
     </script>
   </body>

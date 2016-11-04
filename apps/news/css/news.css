@@ -39,6 +39,7 @@ body {
     width: 100%;
     background-color: rgb(68, 98, 255);
     padding-left: 10px;
+    font-family: monospace;
 }
 
 .news-container a.languages {
@@ -89,6 +90,7 @@ body {
 
 .feed .published {
     margin-top: 5px;
+    clear: both;
 }
 
 .dialog-container {

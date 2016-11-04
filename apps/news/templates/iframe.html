@@ -1,7 +1,7 @@
 <md-dialog arial-label="LINK" class="dialog-container">
   <md-toolbar>
     <div class="md-toolbar-tools">
-      <h2 class="title">{{title}}</h2>
+      <h2 class="title"><a href="{{givenUrl}}" target="_blank">{{title}}</a></h2>
       <span flex></span>
       <md-button class="md-icon-button" ng-click="close()">
 	<md-icon md-svg-src="/news/img/close_32x32.svg" aria-label="Close dialog"></md-icon>
@@ -9,6 +9,6 @@
     </div>
   </md-toolbar>
   <md-dialog-content class="contents">
-    <iframe class="frame" ng-src="{{givenUrl}}"></iframe>
+    <iframe class="frame" ng-src="{{givenUrl}}" onload="check_frame(this)"></iframe>
   </md-dialog-content>
 </md-dialog>
