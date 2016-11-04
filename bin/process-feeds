@@ -1,0 +1,21 @@
+#!/bin/sh
+#| -*- mode:scheme; coding:utf-8 -*-
+this_path=`dirname "$0"`
+SAGITTARIUS=${SAGITTARIUS:-"sagittarius"}
+exec $SAGITTARIUS -L${this_path}/../lib $0 "$@"
+|#
+
+(import (rnrs)
+	(news-reader commands)
+	(util logging)
+	(getopt)
+	(dbi))
+
+(define (make-console-logger level)
+  (make-async-logger level (make-appender "[~w5] [~l] ~m")))
+(define (main args)
+  (with-args (cdr args)
+      ((d (#\d "debug") #f #f) . rest)
+    (*command-logger* (make-console-logger (if d +debug-level+ +info-level+)))
+    (for-each news-reader-process-feed
+	      (map provider-name (news-reader-retrieve-provider)))))
