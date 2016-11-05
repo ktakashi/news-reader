@@ -123,12 +123,12 @@
       (define (->map key value) (cons key (map summary->array value)))
       (if (null? (~ providers 'providers))
 	  (values 200 'application/json "{}")
-	  (let ((summaries (news-reader-retrieve-summaries
+	  (let* ((summaries (news-reader-retrieve-summaries
 			    (vector->list (~ providers 'providers))
-			    (~ providers 'limit))))
-	    (values 200 'application/json
-		    (json->string (list->vector
-				   (hashtable-map ->map summaries)))))))
+			    (~ providers 'limit)))
+		 (vec (list->vector (hashtable-map ->map summaries))))
+	    (vector-sort! (lambda (a b) (string<=? (car a) (car b))) vec)
+	    (values 200 'application/json (json->string vec)))))
     :json? #t))
 
 (define (mount-paths)
