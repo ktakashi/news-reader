@@ -46,6 +46,7 @@
 	  (news-reader commands)
 	  (news-reader database)
 	  (news-reader config)
+	  (util hashtables)
 	  (srfi :19))
 
 (define style-loader (cuberteria-resource-loader 'text/css "./css"))
@@ -84,24 +85,25 @@
 (define (utf8->integer u8)
   (let ((v (utf8->string u8)))
     (or (string->number v) 0)))
-(define-class <limit&offset> (<converter-mixin>)
-  ((limit :init-value max-feeds :converter utf8->integer)
-   (offset :init-value 0 :converter utf8->integer)))
+(define-class <limit> (<converter-mixin>)
+  ((limit :init-value max-feeds :converter utf8->integer)))
+(define-class <limit&offset> (<limit>)
+  ((offset :init-value 0 :converter utf8->integer)))
 
+(define (summary->array summary)
+  `#((link . ,(feed-summary-link summary))
+     (feed_name . ,(feed-summary-feed-name summary))
+     (language . ,(feed-summary-language summary))
+     (title . ,(feed-summary-title summary))
+     (summary . ,(feed-summary-summary summary))
+     (created . ,(string-append
+		  (date->string
+		   (time-utc->date (feed-summary-created-date summary))
+		   "~5")
+		  "Z"))))  
 (define retrieve-summary
   (cuberteria-object-mapping-handler <limit&offset>
     (lambda (limit&offet req)
-      (define (->array summary)
-	`#((link . ,(feed-summary-link summary))
-	   (feed_name . ,(feed-summary-feed-name summary))
-	   (language . ,(feed-summary-language summary))
-	   (title . ,(feed-summary-title summary))
-	   (summary . ,(feed-summary-summary summary))
-	   (created . ,(string-append
-			(date->string
-			 (time-utc->date (feed-summary-created-date summary))
-			 "~5")
-			"Z"))))
       (with-path-variable (#/summary\/(.+)/ (http-request-path req))
 	((provider #f))
 	(if provider
@@ -110,13 +112,30 @@
 			      (~ limit&offet 'limit)
 			      (~ limit&offet 'offset))))
 	      (values 200 'application/json
-		      (json->string (map ->array summaries))))
+		      (json->string (map summary->array summaries))))
 	    (values 404 'text/plain "Not found"))))))
-	  
+
+(define-class <providers> (<limit>)
+  ((providers :init-value '())))
+(define retrieve-summaries
+  (cuberteria-object-mapping-handler <providers>
+    (lambda (providers req)
+      (define (->map key value) (cons key (map summary->array value)))
+      (if (null? (~ providers 'providers))
+	  (values 200 'application/json "{}")
+	  (let ((summaries (news-reader-retrieve-summaries
+			    (vector->list (~ providers 'providers))
+			    (~ providers 'limit))))
+	    (values 200 'application/json
+		    (json->string (list->vector
+				   (hashtable-map ->map summaries)))))))
+    :json? #t))
+
 (define (mount-paths)
   `(
     ((GET) "/providers"   ,retrieve-providers)
     ((GET) #/summary\/.+/ ,retrieve-summary)
+    ((POST) "/summary"    ,retrieve-summaries)
     ((GET) #/styles/      ,style-loader)
     ((GET) #/html/        ,template-loader)
     ((GET) #/img/         ,image-loader)

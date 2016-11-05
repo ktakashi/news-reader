@@ -81,9 +81,16 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog) {
                 provider.languages.forEach(function (lang) {
 		    $scope.languages[lang] = false;
 		});
-		$scope.load_summary(provider.name);
 	    });
+	    $scope.load_summaries();
 	});
+    $scope.load_summaries = function () {
+	var names = $scope.providers.map(function(p) { return p.name; });
+	$http.post("/news/summary", { providers: names }).
+	    then(function (response) {
+		$scope.summaries = response.data;
+	    });
+    };
     $scope.show_link = function (ev, link, title) {
 	$mdDialog.show({
 	    templateUrl: '/news/html/iframe.html',

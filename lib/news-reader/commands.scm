@@ -34,6 +34,7 @@
 	  news-reader-process-feed
 	  news-reader-retrieve-provider
 	  news-reader-retrieve-summary
+	  news-reader-retrieve-summaries
 	  news-reader-update-feed-language
 	  ;; Should we move this somewhere?
 	  provider-name
@@ -56,6 +57,7 @@
 	  (util concurrent)
 	  (text sql)
 	  (rfc http)
+	  (srfi :1)
 	  (srfi :13)
 	  (srfi :39)
 	  (util logging)
@@ -297,5 +299,46 @@
 						offset)
 		(lambda (query)
 		  (apply make-feed-summary (vector->list query))))))
+	  '()))))
+
+(define news-reader-retrieve-summaries
+  (let ()
+    (define select-sql
+      (ssql->sql
+       '(select ((~ p name) (~ f title) (~ l code2)
+		 (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
+		(from ((as feed_summary s)
+		       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
+		       (inner-join (as languages l)
+				   (on (= (~ l id) (~ f language_id))))
+		       (inner-join (as provider p)
+				   (on (= (~ p id) (~ f provider_id))))))
+		(where (= (~ p name) ?))
+		(order-by ((~ s pubDate) desc))
+		(limit ?))))
+    (define max-fetch (div +max-fetch-count+ 2))
+    (define (s ignore) select-sql)
+    (lambda (providers limit)
+      (if (non-negative-fixnum? limit)
+	  ;; NB: this doesn't work on SQLite3 but we are no longer testing
+	  ;;     on it, so forget about it for now
+	  ;; TODO: make better query instead of using union...
+	  (let ((sql (string-append "("
+		      (string-join (list-tabulate (length providers) s)
+				   ") union all (")
+		      ")"))
+		(limit (min limit max-fetch)))
+	    (call-with-dbi-connection
+	      (lambda (dbi)
+		(define select-stmt (dbi-prepared-statement dbi sql))
+		(define ht (make-string-hashtable))
+		(dbi-query-for-each
+		 (apply dbi-execute-query! select-stmt
+			(append-map (lambda (p) (list p limit)) providers))
+		 (lambda (query)
+		   (let ((n (vector-ref query 0))
+			 (s (apply make-feed-summary (vector->list query))))
+		     (hashtable-update! ht n (lambda (e) (cons s e)) '()))))
+		ht)))
 	  '()))))
 )
