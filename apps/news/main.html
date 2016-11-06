@@ -30,7 +30,7 @@
 		<div class="md-toolbar-tools" style="height: 32px !important">
 		  <h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
 		  <span flex></span>
-		  <md-button class="md-icon-button" ng-click="load_summary(provider)">
+		  <md-button class="md-icon-button" ng-click="load_summary(provider)" ng-disabled="is_loading()">
 		    <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
 		  </md-button>
 		</div>
@@ -43,7 +43,7 @@
 		  <div class="summary" ng-bind-html="s.summary"></div>
 		  <div class="published">{{s.feed_name}}, {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
 		</div>
-		<div class="read-more" ng-hide="!offsets[provider]">
+		<div class="read-more" ng-hide="!offsets[provider]" ng-disabled="is_loading()">
 		  <span ng-click="read_more(provider, offsets[provider])">Read more</span>
 		</div>
 	      </div>
@@ -65,13 +65,43 @@
     <script><!--
 var news = angular.module('news', ['ngMaterial', 'ngSanitize']);
 
-news.controller('providerCtrl', function($scope, $http, $mdDialog) {
+news.config(function ($provide, $httpProvider) {
+    $provide.factory('HttpInterceptor', function($q, $rootScope) {
+	$rootScope.loading = false;
+	return {
+	    request: function(config) {
+		$rootScope.loading = true;
+		return config || $q.when(config);
+	    },
+	    requestError: function(rejection) {
+		$rootScope.loading = false;
+		return $q.reject(rejection);
+	    },
+	    response:  function (response) {
+		$rootScope.loading = false;
+		return response || $q.when(response);
+	    },
+	    responseError:  function (rejection) {
+		$rootScope.loading = false;
+		return $q.reject(rejection);
+	    }
+	};
+    });
+    $httpProvider.interceptors.push('HttpInterceptor');
+});
+
+news.controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope) {
     $scope.providers = [];
     $scope.summaries = {};
     $scope.urls = {};
     $scope.languages = {};
     $scope.hide_provider = {};
     $scope.offsets = {};
+    
+    $scope.is_loading = function() {
+	return $rootScope.loading;
+    };
+    
     $http.get("/news/providers").
 	then(function (response) {
 	    $scope.providers = response.data;
