@@ -34,6 +34,7 @@
 	  news-reader-process-feed
 	  news-reader-retrieve-provider
 	  news-reader-retrieve-summary
+	  news-reader-retrieve-summary-by-feed-url
 	  news-reader-retrieve-summaries
 	  news-reader-update-feed-language
 	  ;; Should we move this somewhere?
@@ -43,6 +44,7 @@
 	  feed-summary-name
 	  feed-summary-link
 	  feed-summary-feed-name
+	  feed-summary-feed-url
 	  feed-summary-language
 	  feed-summary-title
 	  feed-summary-summary
@@ -268,54 +270,48 @@
 		id&name&urls)))))))
     
 (define-record-type feed-summary
-  (fields name feed-name language link title summary created-date))
+  (fields name feed-name feed-url language link title summary created-date))
 
 
 (define +max-fetch-count+ max-feeds)
 (define (non-negative-fixnum? n) (and (fixnum? n) (not (negative? n))))
+(define (summary-sql :key (offset '()) (where '((where (= (~ p name) ?)))))
+  `(select ((~ p name) (~ f title) (~ f url) (~ l code2)
+	    (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
+	   (from ((as feed_summary s)
+		  (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
+		  (inner-join (as languages l)
+			      (on (= (~ l id) (~ f language_id))))
+		  (inner-join (as provider p)
+			      (on (= (~ p id) (~ f provider_id))))))
+	   ,@where
+	   (order-by ((~ s pubDate) desc))
+	   (limit ?)
+	   ,@offset))
+(define (generate-retriever1 ssql)
+  (define select-sql (ssql->sql ssql))
+  (lambda (param limit offset)
+    (if (and (non-negative-fixnum? limit) (non-negative-fixnum? offset))
+	(call-with-dbi-connection
+	 (lambda (dbi)
+	   (define select-stmt (dbi-prepared-statement dbi select-sql))
+	   (dbi-query-map (dbi-execute-query! select-stmt param
+					      (min limit +max-fetch-count+)
+					      offset)
+			  (lambda (query)
+			    (apply make-feed-summary (vector->list query))))))
+	'())))
 (define news-reader-retrieve-summary
-  (let ()
-    (define select-sql
-      (ssql->sql
-       '(select ((~ p name) (~ f title) (~ l code2)
-		 (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
-		(from ((as feed_summary s)
-		       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
-		       (inner-join (as languages l)
-				   (on (= (~ l id) (~ f language_id))))
-		       (inner-join (as provider p)
-				   (on (= (~ p id) (~ f provider_id))))))
-		(where (= (~ p name) ?))
-		(order-by ((~ s pubDate) desc))
-		(limit ?)
-		(offset ?))))
-    (lambda (provider limit offset)
-      (if (and (non-negative-fixnum? limit) (non-negative-fixnum? offset))
-	  (call-with-dbi-connection
-	   (lambda (dbi)
-	     (define select-stmt (dbi-prepared-statement dbi select-sql))
-	     (dbi-query-map (dbi-execute-query! select-stmt provider
-						(min limit +max-fetch-count+)
-						offset)
-		(lambda (query)
-		  (apply make-feed-summary (vector->list query))))))
-	  '()))))
+  (generate-retriever1 (summary-sql :offset '((offset ?)))))
+
+(define news-reader-retrieve-summary-by-feed-url
+  (generate-retriever1 (summary-sql :offset '((offset ?))
+				    :where '((where (= (~ f url) ?))))))
+
 
 (define news-reader-retrieve-summaries
   (let ()
-    (define select-sql
-      (ssql->sql
-       '(select ((~ p name) (~ f title) (~ l code2)
-		 (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
-		(from ((as feed_summary s)
-		       (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
-		       (inner-join (as languages l)
-				   (on (= (~ l id) (~ f language_id))))
-		       (inner-join (as provider p)
-				   (on (= (~ p id) (~ f provider_id))))))
-		(where (= (~ p name) ?))
-		(order-by ((~ s pubDate) desc))
-		(limit ?))))
+    (define select-sql (ssql->sql (summary-sql)))
     (define max-fetch (div +max-fetch-count+ 2))
     (define (s ignore) select-sql)
     (lambda (providers limit)

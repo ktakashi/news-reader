@@ -30,6 +30,9 @@
 		<div class="md-toolbar-tools" style="height: 32px !important">
 		  <h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
 		  <span flex></span>
+		  <md-button class="md-icon-button" ng-click="clear_filter(provider)" ng-disabled="is_loading()" ng-hide="!filters[provider]">
+		    <md-icon md-svg-src="/news/img/close_32x32.svg" aria-label="Clear filter {{provider}}"></md-icon>
+		  </md-button>
 		  <md-button class="md-icon-button" ng-click="load_summary(provider)" ng-disabled="is_loading()">
 		    <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
 		  </md-button>
@@ -41,7 +44,9 @@
 		    <a ng-click="show_link($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
 		  </h3>
 		  <div class="summary" ng-bind-html="s.summary"></div>
-		  <div class="published">{{s.feed_name}}, {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
+		  <div class="published">
+		    <a href="javascript:void(0)" ng-click="filter_by_url(provider, s.feed_url)">{{s.feed_name}}</a>,
+		    {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
 		</div>
 		<div class="read-more" ng-hide="!offsets[provider]" ng-disabled="is_loading()">
 		  <span ng-click="read_more(provider, offsets[provider])">Read more</span>
@@ -97,7 +102,8 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope) {
     $scope.languages = {};
     $scope.hide_provider = {};
     $scope.offsets = {};
-    
+    $scope.filters = {};
+	
     $scope.is_loading = function() {
 	return $rootScope.loading;
     };
@@ -142,22 +148,42 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope) {
     $scope.load_summary = function(provider) {
 	// only for UX, it's better to see something is working...
 	$scope.summaries[provider] = {};
-	$http.get("/news/summary/" + provider).
-	    then(function (response) {
-		$scope.summaries[provider] = response.data;
-		$scope.offsets[provider] = response.data.length;
-	    });
+	var callback = function (response) {
+	    $scope.summaries[provider] = response.data;
+	    $scope.offsets[provider] = response.data.length;
+	};
+	if ($scope.filters[provider]) {
+	    $http.post("/news/summary/" + provider,
+		       { feed_url: $scope.filters[provider] })
+		.then(callback);
+	} else {
+	    $http.get("/news/summary/" + provider).then(callback);
+	}
+    };
+    $scope.filter_by_url = function(provider, url) {
+	$scope.filters[provider] = url;
+	$scope.load_summary(provider);
+    };
+    $scope.clear_filter = function(provider) {
+	$scope.filters[provider] = false;
+	$scope.load_summary(provider);
     };
     $scope.read_more = function(provider, offset) {
-	$http.get("/news/summary/" + provider + "?offset=" + offset).
-	    then(function (response) {
-		if (response.data.length != 0) {
-		    $scope.summaries[provider] = $scope.summaries[provider].concat(response.data);
-		    $scope.offsets[provider] += response.data.length;
-		} else {
-		    $scope.offsets[provider] = false;
-		}
-	    });
+	var callback = function (response) {
+	    if (response.data.length != 0) {
+		$scope.summaries[provider] = $scope.summaries[provider].concat(response.data);
+		$scope.offsets[provider] += response.data.length;
+	    } else {
+		$scope.offsets[provider] = false;
+	    }
+	};
+	var url = "/news/summary/" + provider;
+	if ($scope.filters[provider]) {
+	    $http.post(url, { "offset": offset, feed_url: $scope.filters[provider] })
+		.then(callback);
+	} else {
+	    $http.get(url + "?offset=" + offset).then(callback);
+	}
     };
     $scope.hide_by_lang = function(lang) {
 	$scope.providers.forEach(function(provider) {

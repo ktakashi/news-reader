@@ -47,7 +47,8 @@
 	  (news-reader database)
 	  (news-reader config)
 	  (util hashtables)
-	  (srfi :19))
+	  (srfi :19)
+	  (srfi :26))
 
 (define style-loader (cuberteria-resource-loader 'text/css "./css"))
 (define template-loader (cuberteria-resource-loader 'text/html "./templates"))
@@ -83,16 +84,22 @@
     (values 200 'application/json (json->string names))))
 
 (define (utf8->integer u8)
-  (let ((v (utf8->string u8)))
-    (or (string->number v) 0)))
+  ;; in case of JSON
+  (if (number? u8)
+      u8
+      (let ((v (utf8->string u8)))
+	(or (string->number v) 0))))
 (define-class <limit> (<converter-mixin>)
   ((limit :init-value max-feeds :converter utf8->integer)))
 (define-class <limit&offset> (<limit>)
   ((offset :init-value 0 :converter utf8->integer)))
+(define-class <feed-filter> (<limit&offset>)
+  ((url :init-value #f :json-element-name "feed_url")))
 
 (define (summary->array summary)
   `#((link . ,(feed-summary-link summary))
      (feed_name . ,(feed-summary-feed-name summary))
+     (feed_url . ,(feed-summary-feed-url summary))
      (language . ,(feed-summary-language summary))
      (title . ,(feed-summary-title summary))
      (summary . ,(feed-summary-summary summary))
@@ -102,18 +109,22 @@
 		   "~5")
 		  "Z"))))  
 (define retrieve-summary
-  (cuberteria-object-mapping-handler <limit&offset>
+  (cuberteria-object-mapping-handler <feed-filter>
     (lambda (limit&offet req)
+      (define (query retriever param)
+	(let ((summaries (retriever param (~ limit&offet 'limit)
+				    (~ limit&offet 'offset))))
+	  (values 200 'application/json
+		  (json->string (map summary->array summaries)))))
       (with-path-variable (#/summary\/(.+)/ (http-request-path req))
 	((provider #f))
-	(if provider
-	    (let ((summaries (news-reader-retrieve-summary
-			      (uri-decode-string provider :cgi-decode #t)
-			      (~ limit&offet 'limit)
-			      (~ limit&offet 'offset))))
-	      (values 200 'application/json
-		      (json->string (map summary->array summaries))))
-	    (values 404 'text/plain "Not found"))))))
+	(cond ((~ limit&offet 'url) =>
+	       (cut query news-reader-retrieve-summary-by-feed-url <>))
+	      (provider
+	       (query news-reader-retrieve-summary
+		      (uri-decode-string provider :cgi-decode #t)))
+	      (else (values 404 'text/plain "Not found")))))
+    :json? #t))
 
 (define-class <providers> (<limit>)
   ((providers :init-value '())))
@@ -134,7 +145,7 @@
 (define (mount-paths)
   `(
     ((GET) "/providers"   ,retrieve-providers)
-    ((GET) #/summary\/.+/ ,retrieve-summary)
+    ((POST GET) #/summary\/.+/ ,retrieve-summary)
     ((POST) "/summary"    ,retrieve-summaries)
     ((GET) #/styles/      ,style-loader)
     ((GET) #/html/        ,template-loader)
