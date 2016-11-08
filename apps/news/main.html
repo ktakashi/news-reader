@@ -125,6 +125,9 @@ news.controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope) {
 	$http.post("/news/summary", { providers: names }).
 	    then(function (response) {
 		$scope.summaries = response.data;
+		for (var provider in $scope.summaries) {
+		    $scope.offsets[provider] = $scope.summaries[provider].length;
+		}
 	    });
     };
     $scope.show_link = function (ev, link, title) {
