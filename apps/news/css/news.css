@@ -33,6 +33,7 @@ body {
     max-height: 672px;		/* feeds (332px + 2px (border)) * 2 + 4*/
     overflow-y: scroll;
     overflow-x: hidden;
+    background-color: rgb(232, 232, 232);
 }
 
 .news-container div.languages {

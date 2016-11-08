@@ -59,7 +59,7 @@
 		(let ((title (get-content (rss-item-title item)))
 		      (desc (get-content (rss-item-description item)))
 		      (url (get-url item)))
-		  (and (not (or (string-null? title) (string-null? desc)))
+		  (and (not (string-null? title))
 		       url
 		       (list url
 			     title desc
