@@ -65,6 +65,7 @@
 	  (util logging)
 	  (sagittarius)
 	  (sagittarius control)
+	  (sagittarius regex)
 	  (dbi))
 
 ;; default do nothing
@@ -244,30 +245,24 @@
 (define-record-type provider (fields name url languages))
 (define news-reader-retrieve-provider
   (let ()
-    (define language-sql
+    (define select-sql
       (ssql->sql
-       '(select-distinct ((~ l code2))
-	 (from ((as languages l)
-		(inner-join (as feed f) (on (= (~ f language_id) (~ l id))))
-		(inner-join (as provider p)
-			    (on (= (~ f provider_id) (~ p id))))))
-	 (where (= (~ p id) ?)))))
+       '(select ((~ p name) (~ p url) (string_agg (distinct (~ l code2)) ","))
+		(from ((as provider p)
+		       (inner-join (as feed f)
+				   (on (= (~ p id) (~ f provider_id))))
+		       (inner-join (as languages l)
+				   (on (= (~ l id) (~ f language_id))))))
+		(group-by (~ p id) (~ p name) (~ p url))
+		(order-by (~ p name)))))
     (lambda ()
       (call-with-dbi-connection
        (lambda (dbi)
-	 (define select-sql "select id, name, url from provider order by name")
 	 (define select-stmt (dbi-prepared-statement dbi select-sql))
-	 (let ((id&name&urls (dbi-query-map (dbi-execute-query! select-stmt)
-					    vector->list))
-	       (language-stmt (dbi-prepared-statement dbi language-sql)))
-	   (map (lambda (id&name&url)
-		  (let ((id (car id&name&url))
-			(name (cadr id&name&url))
-			(url (caddr id&name&url)))
-		    (make-provider name url
-		      (dbi-query-map (dbi-execute-query! language-stmt id)
-				     (lambda (q) (vector-ref q 0))))))
-		id&name&urls)))))))
+	 (define (->provider query)
+	   (make-provider (vector-ref query 0) (vector-ref query 1)
+			  (string-split (vector-ref query 2) ",")))
+	 (dbi-query-map (dbi-execute-query! select-stmt) ->provider))))))
     
 (define-record-type feed-summary
   (fields name feed-name feed-url language link title summary created-date))
@@ -315,7 +310,7 @@
     (define max-fetch (div +max-fetch-count+ 2))
     (define (s ignore) select-sql)
     (lambda (providers limit)
-      (if (non-negative-fixnum? limit)
+      (if (and (not (null? providers)) (non-negative-fixnum? limit))
 	  ;; NB: this doesn't work on SQLite3 but we are no longer testing
 	  ;;     on it, so forget about it for now
 	  ;; TODO: make better query instead of using union...
