@@ -53,6 +53,7 @@
 (define style-loader (cuberteria-resource-loader 'text/css "./css"))
 (define template-loader (cuberteria-resource-loader 'text/html "./templates"))
 (define image-loader (cuberteria-resource-loader 'text/html "./images"))
+(define js-loader (cuberteria-resource-loader 'text/javascript "./scripts"))
   
 (define-syntax with-path-variable
   (syntax-rules ()
@@ -150,6 +151,7 @@
     ((GET) #/styles/      ,style-loader)
     ((GET) #/html/        ,template-loader)
     ((GET) #/img/         ,image-loader)
+    ((GET) #/js/         ,js-loader)
     ))
 
 (define (support-methods) '(GET))
