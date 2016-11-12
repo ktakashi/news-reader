@@ -96,6 +96,11 @@ body {
     clear: both;
 }
 
+.feeds-wrapper .inserted {
+    clear: both;
+    width: 100%;
+}
+
 .dialog-container {
     width: 100%;
     height: 100%;

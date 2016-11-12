@@ -32,20 +32,15 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.hide_provider = {};
 	$scope.offsets = {};
 	$scope.filters = {};
-	$scope.insert_point = {};
 
 	$http.get("/news/providers").
 	    then(function (response) {
 		$scope.providers = response.data;
 		$scope.providers.forEach(function (provider, index) {
 		    $scope.urls[provider.name] = provider.url;
-		    // $scope.hide_provider[provider.name] = false;
 		    provider.languages.forEach(function (lang) {
 			$scope.languages[lang] = false;
 		    });
-		    if (index > 0 && index % 3 == 0) {
-			$scope.insert_point[provider.name] = index;
-		    }
 		});
 		$scope.load_summaries();
 	    });
@@ -57,10 +52,18 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    var names = $scope.providers.map(function(p) { return p.name; });
 	    $http.post("/news/summary", { providers: names }).
 		then(function (response) {
-		    $scope.summaries = response.data;
+		    $scope.summaries = response.data;			
 		    $scope.summaries.forEach(function(summary) {
 			$scope.offsets[summary.provider] = summary.feeds.length;
 		    });
+		    // FIXME magic number
+		    var len = Math.floor($scope.summaries.length / 3);
+		    var index = (len) * 3;
+		    while (len-- > 0) {
+			var dummy = {provider: false, feeds: [], dummy: Math.random()};
+			$scope.summaries.splice(index, 0, dummy);
+			index -= 3;
+		    }
 		});
 	};
 	$scope.show_link = function (ev, link, title) {
@@ -154,6 +157,9 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    return size > 1;
 	    
 	};
+	$scope.insert_thing = function(index) {
+	    return retrieve_insertion($http, index);
+	};
     })
 
     .controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
@@ -162,6 +168,15 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.close = function () {
 	    $mdDialog.cancel();
 	}
+    })
+
+    .directive('insertThing', function($http) {
+	return function(scope, element, attr) {
+	    if (!scope.provider) {
+		angular.element(element).removeClass("feed-contents");
+		angular.element(element).addClass("inserted");
+	    }
+	};
     });
 
 function check_frame(iframe) {
