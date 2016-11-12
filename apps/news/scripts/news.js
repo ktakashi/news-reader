@@ -24,7 +24,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$httpProvider.interceptors.push('HttpInterceptor');
     })
 
-    .controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope) {
+    .controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope, $sce) {
 	$scope.providers = [];
 	$scope.summaries = [];
 	$scope.urls = {};
@@ -158,7 +158,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    
 	};
 	$scope.insert_thing = function(index) {
-	    return retrieve_insertion($http, index);
+	    return $sce.trustAsHtml(retrieve_insertion($http, index));
 	};
     })
 
