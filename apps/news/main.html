@@ -27,11 +27,11 @@
 	       href="javascript:void(0)" ng-click="hide_by_lang(lang)">{{lang}}</a>
 	  </div>
 	  <div class="feeds-wrapper">
-	    <div class="feed-contents" ng-repeat="(provider, summary) in summaries">
+	    <div class="feed-contents" ng-repeat="summary in summaries" insert-thing ng-init="provider=summary.provider">
 	      <div ng-hide="hide_provider[provider]" class="feeds">
 		<md-toolbar style="min-height: 32px !important">
 		  <div class="md-toolbar-tools" style="height: 32px !important">
-		    <h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
+		    <h2 class="provider" style="max-height: 30px !important"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
 		    <span flex></span>
 		    <md-button class="md-icon-button" ng-click="clear_filter(provider)" ng-disabled="is_loading()" ng-hide="!filters[provider]">
 		      <md-icon md-svg-src="/news/img/close_32x32.svg" aria-label="Clear filter {{provider}}"></md-icon>
@@ -42,7 +42,7 @@
 		  </div>
 		</md-toolbar>
 		<div class="feed-container">
-		  <div ng-repeat="s in summary" class="feed" ng-hide="languages[s.language]">
+		  <div ng-repeat="s in summary.feeds" class="feed" ng-hide="languages[s.language]">
 		    <h3 class="title">
 		      <a ng-click="show_link($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
 		    </h3>

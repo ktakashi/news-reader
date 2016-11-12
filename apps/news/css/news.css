@@ -35,6 +35,11 @@ body {
     overflow-x: hidden;
     background-color: rgb(232, 232, 232);
 }
+.feeds-wrapper .feed-contents {
+    position: relative;
+    float: left;
+    width: 33%;
+}
 
 .news-container div.languages {
     width: 100%;
@@ -52,9 +57,6 @@ body {
 
 .news-container .feeds {
     font-size: small;
-    width: 33%;
-    position: relative;
-    float: left;
     height: 332px;		/* feed + provider header*/
     font-family: "Times New Roman", Times, serif;
 }

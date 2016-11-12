@@ -108,21 +108,24 @@
 		  (date->string
 		   (time-utc->date (feed-summary-created-date summary))
 		   "~5")
-		  "Z"))))  
+		  "Z"))))
+
 (define retrieve-summary
   (cuberteria-object-mapping-handler <feed-filter>
     (lambda (limit&offet req)
-      (define (query retriever param)
+      (define (query retriever provider param)
 	(let ((summaries (retriever param (~ limit&offet 'limit)
 				    (~ limit&offet 'offset))))
 	  (values 200 'application/json
 		  (json->string (map summary->array summaries)))))
       (with-path-variable (#/summary\/(.+)/ (http-request-path req))
 	((provider #f))
+	
 	(cond ((~ limit&offet 'url) =>
-	       (cut query news-reader-retrieve-summary-by-feed-url <>))
+	       (cut query news-reader-retrieve-summary-by-feed-url
+		    provider <>))
 	      (provider
-	       (query news-reader-retrieve-summary
+	       (query news-reader-retrieve-summary provider
 		      (uri-decode-string provider :cgi-decode #t)))
 	      (else (values 404 'text/plain "Not found")))))
     :json? #t))
@@ -132,15 +135,20 @@
 (define retrieve-summaries
   (cuberteria-object-mapping-handler <providers>
     (lambda (providers req)
-      (define (->map key value) (cons key (map summary->array value)))
+      (define (->summary-map provider summaries)
+	`#(("provider" . ,provider)
+	   ("feeds" ,@(map summary->array summaries))))
+      (define (name-ref e) (cdr (vector-ref e 0)))
+      (define (name<=? a b) (string<=? (name-ref a) (name-ref b)))
       (if (null? (~ providers 'providers))
 	  (values 200 'application/json "{}")
-	  (let* ((summaries (news-reader-retrieve-summaries
+	  (let ((summaries (news-reader-retrieve-summaries
 			    (vector->list (~ providers 'providers))
-			    (~ providers 'limit)))
-		 (vec (list->vector (hashtable-map ->map summaries))))
-	    (vector-sort! (lambda (a b) (string<=? (car a) (car b))) vec)
-	    (values 200 'application/json (json->string vec)))))
+			    (~ providers 'limit))))
+	    (values 200 'application/json
+		    (json->string
+		     (list-sort name<=?
+			(hashtable-map ->summary-map summaries)))))))
     :json? #t))
 
 (define (mount-paths)

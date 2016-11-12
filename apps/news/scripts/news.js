@@ -26,37 +26,41 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 
     .controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope) {
 	$scope.providers = [];
-	$scope.summaries = {};
+	$scope.summaries = [];
 	$scope.urls = {};
 	$scope.languages = {};
 	$scope.hide_provider = {};
 	$scope.offsets = {};
 	$scope.filters = {};
+	$scope.insert_point = {};
+
+	$http.get("/news/providers").
+	    then(function (response) {
+		$scope.providers = response.data;
+		$scope.providers.forEach(function (provider, index) {
+		    $scope.urls[provider.name] = provider.url;
+		    // $scope.hide_provider[provider.name] = false;
+		    provider.languages.forEach(function (lang) {
+			$scope.languages[lang] = false;
+		    });
+		    if (index > 0 && index % 3 == 0) {
+			$scope.insert_point[provider.name] = index;
+		    }
+		});
+		$scope.load_summaries();
+	    });
 	
 	$scope.is_loading = function() {
 	    return $rootScope.loading;
 	};
-	
-	$http.get("/news/providers").
-	    then(function (response) {
-		$scope.providers = response.data;
-		$scope.providers.forEach(function (provider) {
-		    $scope.urls[provider.name] = provider.url;
-		    // $scope.hide_provider[provider.name] = false;
-                    provider.languages.forEach(function (lang) {
-			$scope.languages[lang] = false;
-		    });
-		});
-		$scope.load_summaries();
-	    });
 	$scope.load_summaries = function () {
 	    var names = $scope.providers.map(function(p) { return p.name; });
 	    $http.post("/news/summary", { providers: names }).
 		then(function (response) {
 		    $scope.summaries = response.data;
-		    for (var provider in $scope.summaries) {
-			$scope.offsets[provider] = $scope.summaries[provider].length;
-		    }
+		    $scope.summaries.forEach(function(summary) {
+			$scope.offsets[summary.provider] = summary.feeds.length;
+		    });
 		});
 	};
 	$scope.show_link = function (ev, link, title) {
@@ -79,10 +83,19 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	};
 	$scope.load_summary = function(provider) {
 	    // only for UX, it's better to see something is working...
-	    $scope.summaries[provider] = {};
+	    $scope.summaries.forEach(function(summary){
+		if (summary.provider === provider) {
+		    summary.feeds = [];
+		}
+	    });
 	    var callback = function (response) {
-		$scope.summaries[provider] = response.data;
-		$scope.offsets[provider] = response.data.length;
+		var feeds = response.data;
+		$scope.summaries.forEach(function(summary){
+		    if (summary.provider === provider) {
+			summary.feeds = feeds;
+		    }
+		});
+		$scope.offsets[provider] = feeds.length;
 	    };
 	    if ($scope.filters[provider]) {
 		$http.post("/news/summary/" + provider,
@@ -140,9 +153,6 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    }
 	    return size > 1;
 	    
-	};
-	$scope.insert_things = function(index) {
-	    return retrieve_insertion($http, index);
 	};
     })
 
