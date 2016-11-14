@@ -60,6 +60,7 @@
 	  (text sql)
 	  (rfc http)
 	  (srfi :1)
+	  (srfi :14)
 	  (srfi :13)
 	  (srfi :39)
 	  (util logging)
@@ -178,9 +179,17 @@
      (dbi-execute! stmt lang url)
      (dbi-commit! stmt))))
 
+(define (sanitise item)
+  (define (do-sanitise l)
+    (filter-map (lambda (c) (and (char-set-contains? char-set:printing c) c))
+		l))
+  (if (string? item)
+      (list->string (do-sanitise (string->list item)))
+      item))
+
 (define news-reader-process-feed
   (let ()
-    (define count-sql "select count(*) from feed")    
+    (define count-sql "select count(*) from feed")
     (define insert-sql
       (duplicate-insert 'feed_summary
 			'(guid)
@@ -233,8 +242,9 @@
 				(write-debug-log (*command-logger*)
 				  "SQL ~a ~s"
 				  insert-sql (cons* id feed-id item))
-				(apply dbi-execute! stmt id feed-id item)))
-			    (process-feed b)))
+				(apply dbi-execute! stmt id feed-id
+				       (map sanitise item))))
+			    (or (process-feed b) '())))
 		(dbi-connection-commit! conn)))))
 	 (dbi-do-fetch! (v (dbi-execute-query! select-stmt provider))
 	   (thread-pool-push-task! thread-pool
