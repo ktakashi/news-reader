@@ -24,7 +24,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$httpProvider.interceptors.push('HttpInterceptor');
     })
 
-    .controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope, $sce) {
+    .controller('providerCtrl', function($scope, $http, $mdDialog, $rootScope) {
 	$scope.providers = [];
 	$scope.summaries = [];
 	$scope.urls = {};
@@ -56,14 +56,6 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		    $scope.summaries.forEach(function(summary) {
 			$scope.offsets[summary.provider] = summary.feeds.length;
 		    });
-		    // FIXME magic number
-		    var len = Math.floor($scope.summaries.length / 3);
-		    var index = (len) * 3;
-		    while (len-- > 0) {
-			var dummy = {provider: false, feeds: [], dummy: Math.random()};
-			$scope.summaries.splice(index, 0, dummy);
-			index -= 3;
-		    }
 		});
 	};
 	$scope.show_link = function (ev, link, title) {
@@ -156,9 +148,6 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    }
 	    return size > 1;
 	    
-	};
-	$scope.insert_thing = function(index) {
-	    return $sce.trustAsHtml(retrieve_insertion($http, index));
 	};
     })
 
