@@ -320,26 +320,27 @@
     (define max-fetch (div +max-fetch-count+ 2))
     (define (s ignore) select-sql)
     (lambda (providers limit)
-      (if (and (not (null? providers)) (non-negative-fixnum? limit))
-	  ;; NB: this doesn't work on SQLite3 but we are no longer testing
-	  ;;     on it, so forget about it for now
-	  ;; TODO: make better query instead of using union...
-	  (let ((sql (string-append "("
-		      (string-join (list-tabulate (length providers) s)
-				   ") union all (")
-		      ")"))
-		(limit (min limit max-fetch)))
-	    (call-with-dbi-connection
-	      (lambda (dbi)
-		(define select-stmt (dbi-prepared-statement dbi sql))
-		(define ht (make-string-hashtable))
-		(dbi-query-for-each
-		 (apply dbi-execute-query! select-stmt
-			(append-map (lambda (p) (list p limit)) providers))
-		 (lambda (query)
-		   (let ((n (vector-ref query 0))
-			 (s (apply make-feed-summary (vector->list query))))
-		     (hashtable-update! ht n (lambda (e) (cons s e)) '()))))
-		ht)))
-	  '()))))
+      (and-let* (( (not (null? providers)) )
+		 ( (non-negative-fixnum? limit) )
+		 ;; NB: this doesn't work on SQLite3 but we are no longer
+		 ;;     testing on it, so forget about it for now
+		 ;; TODO: make better query instead of using union...
+		 (sql (string-append
+		       "("
+		       (string-join (list-tabulate (length providers) s)
+				    ") union all (")
+		       ")"))
+		 (limit (min limit max-fetch)))
+	(call-with-dbi-connection
+	 (lambda (dbi)
+	   (define select-stmt (dbi-prepared-statement dbi sql))
+	   (define ht (make-string-hashtable))
+	   (dbi-query-for-each
+	    (apply dbi-execute-query! select-stmt
+		   (append-map (lambda (p) (list p limit)) providers))
+	    (lambda (query)
+	      (let ((n (vector-ref query 0))
+		    (s (apply make-feed-summary (vector->list query))))
+		(hashtable-update! ht n (lambda (e) (cons s e)) '()))))
+	   ht))))))
 )

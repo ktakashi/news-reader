@@ -146,9 +146,11 @@
 			    (vector->list (~ providers 'providers))
 			    (~ providers 'limit))))
 	    (values 200 'application/json
-		    (json->string
-		     (list-sort name<=?
-			(hashtable-map ->summary-map summaries)))))))
+		    (if summaries
+			(json->string
+			 (list-sort name<=?
+			    (hashtable-map ->summary-map summaries)))
+			"[]")))))
     :json? #t))
 
 (define (mount-paths)
