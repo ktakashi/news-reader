@@ -111,8 +111,13 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.read_more = function(provider, offset) {
 	    var callback = function (response) {
 		if (response.data.length != 0) {
-		    $scope.summaries[provider] = $scope.summaries[provider].concat(response.data);
-		    $scope.offsets[provider] += response.data.length;
+		    var feeds = response.data;
+		    $scope.summaries.forEach(function(summary){
+			if (summary.provider === provider) {
+			    summary.feeds = summary.feeds.concat(feeds);
+			}
+		    });
+		    $scope.offsets[provider] += feeds.length;
 		} else {
 		    $scope.offsets[provider] = false;
 		}
