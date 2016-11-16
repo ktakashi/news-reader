@@ -1,5 +1,5 @@
 create user news_reader with password 'news_reader';
-create database news_reader with owner = news_reader;
+create database news_reader with owner = news_reader encoding = 'utf8';
 
 \connect news_reader
 
