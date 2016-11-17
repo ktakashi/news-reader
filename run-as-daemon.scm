@@ -8,7 +8,7 @@
     (print "PID file exists")
     (exit -1))
   (with-args (cdr args)
-      ((sash (#\s "sagittarius") #t "sagittarius")
+      ((sash (#\i "sagittarius") #t "sagittarius")
        (port (#\p "port") #t "8080")
        (remote-port (#\r "remote-port") #t "")
        (shutdown-port (#\s "shutdown-port") #t "8081")
