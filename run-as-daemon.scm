@@ -13,7 +13,7 @@
        (remote-port (#\r "remote-port") #t "")
        (shutdown-port (#\s "shutdown-port") #t "8081")
        (max-thread (#\t "max-thread") #t "10"))
-    
+    (print "Invoking process in background:" sash)   
     (let-values (((pid in out err)
 		  (sys-process-call sash `("run.scm"
 					   "-p" ,port
