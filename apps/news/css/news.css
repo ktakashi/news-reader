@@ -6,39 +6,17 @@ body {
     
 }
 
-.root-container h1.title {
-    font-size: 72px;
-    witdh: 100%;
-    text-align: center;
-    margin: 0px;
-    padding: 10px;
-    font-family: "Architects Daughter", "Helvetica Neue", Helvetica, Arial, serif;
-}
-
 .news-container {
     width: 100%;
     position: relative;
     margin: 0px;
 }
 
-.feeds-wrapper {
-    padding-left: 2px;
-    padding-right: 2px;
-    padding-bottom: 2px;
+.root-container h1.title {
+    witdh: 100%;
+    text-align: center;
     margin: 0px;
-    display: block;
-    margin-left: auto;
-    margin-right:auto;
-    width: 99%;
-    max-height: 672px;		/* feeds (332px + 2px (border)) * 2 + 4*/
-    overflow-y: scroll;
-    overflow-x: hidden;
-    background-color: rgb(232, 232, 232);
-}
-.feeds-wrapper .feed-contents {
-    position: relative;
-    float: left;
-    width: 33%;
+    font-family: "Architects Daughter", "Helvetica Neue", Helvetica, Arial, serif;
 }
 
 .news-container div.languages {
@@ -56,15 +34,22 @@ body {
 }
 
 .news-container .feeds {
-    font-size: small;
-    height: 332px;		/* feed + provider header*/
     font-family: "Times New Roman", Times, serif;
 }
+
 
 .feeds h2.provider {
     background-color: rgb(63, 81, 181);
     margin: 0px;
     padding: 5px;
+}
+
+
+.feed-container .read-more {
+    text-align: center;
+    border-top: 1px dotted gray;
+    color: gray;
+    padding-top: 10px;
 }
 
 .feeds .feed-container {
@@ -74,56 +59,18 @@ body {
     border: 1px solid;
 }
 
-.feed-container .read-more {
-    text-align: center;
-    border-top: 1px dotted gray;
-    color: gray;
-    padding-top: 10px;
-}
-
 .feeds .feed {
     border-top: 1px solid gray;
     padding-bottom: 5px;
     width: 100%;
 }
 
-.feed h3.title {
-    margin-top: 5px;
-}
-
-.feed .published {
-    margin-top: 5px;
-    clear: both;
-}
 
 .feeds-wrapper .inserted {
     clear: both;
     width: 100%;
 }
 
-.dialog-container {
-    width: 100%;
-    height: 100%;
-}
-
-.dialog-container .title {
-    font-size: medium;
-}
-
-.dialog-container .close {
-    /* TODO */
-}
-
-.dialog-container .contents {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
-.dialog-container .contents .frame {
-    width: 100%;
-    height: 100%;
-}
 
 .footer {
     padding-top: 20px;
@@ -136,4 +83,96 @@ body {
     text-align: center;
     font-size: small;
     color: gray;
+}
+
+
+.feed h3.title {
+    margin-top: 5px;
+}
+
+.feed .published {
+    margin-top: 5px;
+    clear: both;
+}
+
+
+@media screen and (min-device-width: 800px) {
+    .root-container h1.title {
+	font-size: 72px;
+	padding: 10px;
+    }
+
+    .feeds-wrapper {
+	padding-left: 2px;
+	padding-right: 2px;
+	padding-bottom: 2px;
+	margin: 0px;
+	display: block;
+	margin-left: auto;
+	margin-right:auto;
+	width: 99%;
+	max-height: 672px;		/* feeds (332px + 2px (border)) * 2 + 4*/
+	overflow-y: scroll;
+	overflow-x: hidden;
+	background-color: rgb(232, 232, 232);
+    }
+    .feeds-wrapper .feed-contents {
+	position: relative;
+	float: left;
+	width: 33%;
+    }
+
+    .news-container .feeds {
+	font-size: small;
+	height: 332px;		/* feed + provider header*/
+    }
+
+    .dialog-container {
+	width: 100%;
+	height: 100%;
+    }
+
+    .dialog-container .title {
+	font-size: medium;
+    }
+
+    .dialog-container .close {
+	/* TODO */
+    }
+
+    .dialog-container .contents {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+    }
+
+    .dialog-container .contents .frame {
+	width: 100%;
+	height: 100%;
+    }
+}
+
+@media screen and (max-device-width: 799px) {
+
+    .feed-contents .feed-container {
+	height: 0px;
+	overflow: hidden;
+	transition-property: height;
+	transition-duration: 1s;
+	transition-timing-function: ease-in-out;
+	-webkit-transition-property: height;
+	-webkit-transition-duration: 1s;
+	-webkit-transition-timing-function: ease-in-out;
+	
+    }
+    svg {
+	-webkit-transition: -webkit-transform 0.3s ease-in;
+	transition: transform 0.3s ease-in;
+    }
+    .arrow-up {
+	-ms-transform: rotate(180deg); /* IE 9 */
+	-webkit-transform: rotate(180deg); /* Chrome, Safari, Opera */
+	transform: rotate(180deg);
+    }
+
 }

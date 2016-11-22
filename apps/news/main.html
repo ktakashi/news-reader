@@ -12,7 +12,7 @@
     <link  href="//ajax.googleapis.com/ajax/libs/angular_material/1.1.1/angular-material.min.css" rel="stylesheet" type="text/css" />
     <link  href="//fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css" />
     <script src="/news/js/news.js"></script>
-    <link  href="/news/styles/news.css" rel="stylesheet" type="text/css" />
+    <link  href="/news/styles/news.css" rel="stylesheet" type="text/css"/>
   </head>
   <body>
     <div id="control" class="root-container">
@@ -26,7 +26,7 @@
 	       href="javascript:void(0)" ng-click="hide_by_lang(lang)">{{lang}}</a>
 	  </div>
 	  <div class="feeds-wrapper">
-	    <div class="feed-contents" ng-repeat="summary in summaries" insert-thing ng-init="provider=summary.provider">
+	    <div class="feed-contents" ng-repeat="summary in summaries" ng-init="provider=summary.provider">
 	      <div ng-hide="hide_provider[provider]" class="feeds">
 		<md-toolbar style="min-height: 32px !important">
 		  <div class="md-toolbar-tools" style="height: 32px !important">
@@ -38,9 +38,10 @@
 		    <md-button class="md-icon-button" ng-click="load_summary(provider)" ng-disabled="is_loading()">
 		      <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
 		    </md-button>
+		    <md-icon md-svg-src="/news/img/circle-arrow-down_32x32.svg" aria-label="Show {{provider}}" slide-toggle="#{{provider}}" ng-if="is_mobile"></md-icon>
 		  </div>
 		</md-toolbar>
-		<div class="feed-container">
+		<div class="feed-container" id="{{ provider }}">
 		  <div ng-repeat="s in summary.feeds" class="feed" ng-hide="languages[s.language]">
 		    <h3 class="title">
 		      <a ng-click="show_link($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>
@@ -64,7 +65,7 @@
 	      Icons created by <a href="http://www.bogdanrosu.com/">Bogdan Rosu Creative</a>
 	    </div>
 	    <div class="copyright">
-	      &copy; 2016 Takashi Kato
+	      &copy; 2016 news-reader.nl
 	    </div>
 	  </div>
 	</div>
