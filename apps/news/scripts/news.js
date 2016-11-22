@@ -219,7 +219,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		    if (!svg) svg = element.children();
 		    
 		    if(!attrs.expanded) {
-			target.style.height = '600px';
+			target.style.height = '750px';
 		    } else {
 			target.style.height = '0px';
 		    }

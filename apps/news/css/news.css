@@ -183,6 +183,9 @@ body {
 	max-height: 150px !important;
 	font-size: 64px;
     }
+    .feed-container .read-more {
+	font-size: 64px;
+    }
     
     .feed-contents .feed-container {
 	height: 0px;
