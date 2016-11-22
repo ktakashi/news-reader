@@ -38,7 +38,7 @@
 		    <md-button class="md-icon-button" ng-click="load_summary(provider)" ng-disabled="is_loading()">
 		      <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
 		    </md-button>
-		    <md-icon md-svg-src="/news/img/circle-arrow-down_32x32.svg" aria-label="Show {{provider}}" slide-toggle="#{{provider}}" ng-if="is_mobile"></md-icon>
+		    <md-icon md-svg-src="/news/img/circle-arrow-down_32x32.svg" aria-label="Show {{provider}}" slide-toggle="{{provider}}" ng-if="is_mobile"></md-icon>
 		  </div>
 		</md-toolbar>
 		<div class="feed-container" id="{{ provider }}">

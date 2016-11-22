@@ -213,8 +213,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		var target, svg;
 		attrs.expanded = false;
 		element.bind('click', function() {
-		    console.log(target);
-		    if (!target) target = document.querySelector(attrs.slideToggle);
+		    console.log(attrs.slideToggle);
+		    if (!target) target = document.getElementById(attrs.slideToggle);
 		    // FIXME this is depending on AngularJS 
 		    if (!svg) svg = element.children();
 		    
