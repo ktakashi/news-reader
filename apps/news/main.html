@@ -9,14 +9,14 @@
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-sanitize.min.js"></script>
     <!-- Angular Material Library -->
     <script src="//ajax.googleapis.com/ajax/libs/angular_material/1.1.1/angular-material.min.js"></script>
-    <link  href="//ajax.googleapis.com/ajax/libs/angular_material/1.1.1/angular-material.min.css" rel="stylesheet" type="text/css" />
+    <link  href="//ajax.googleapis.com/ajax/libs/angular_material/1.1.1/angular-material.css" rel="stylesheet" type="text/css" />
     <link  href="//fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet" type="text/css" />
     <script src="/news/js/news.js"></script>
     <link  href="/news/styles/news.css" rel="stylesheet" type="text/css"/>
   </head>
   <body>
     <div id="control" class="root-container">
-      <h1 class="title">News reader</h1>
+      <div class="title-container"><h1 class="title">News reader</h1></div>
       <div ng-app="news" id="news" class="news-container">
 	<div ng-controller="providerCtrl" ng-cloak>
     	  <div class="languages" ng-if="is_multi_lingual()">

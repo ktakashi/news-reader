@@ -5,6 +5,10 @@ function check_mobile() {
     return check;
 }
 
+function check_device_size() {
+    return window.matchMedia('(max-device-width: 799px)').matches;
+}
+
 angular.module('news', ['ngMaterial', 'ngSanitize'])
     .config(function ($provide, $httpProvider) {
 	$provide.factory('HttpInterceptor', function($q, $rootScope) {
@@ -39,7 +43,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.hide_provider = {};
 	$scope.offsets = {};
 	$scope.filters = {};
-	$scope.is_mobile = check_mobile();
+	$scope.is_mobile = check_device_size();
 	
 	$http.get("/news/providers").
 	    then(function (response) {
@@ -215,7 +219,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		    if (!svg) svg = element.children();
 		    
 		    if(!attrs.expanded) {
-			target.style.height = '300px';
+			target.style.height = '600px';
 		    } else {
 			target.style.height = '0px';
 		    }

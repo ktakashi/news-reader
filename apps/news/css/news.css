@@ -3,7 +3,6 @@ body {
 }
 
 .root-container {
-    
 }
 
 .news-container {
@@ -107,7 +106,7 @@ body {
 	height: 32px !important;
     }
 
-    .feed h2.provider {
+    .feeds h2.provider {
 	max-height: 30px !important;
     }
     
@@ -167,40 +166,62 @@ body {
 
 @media screen and (max-device-width: 799px) {
 
+    .root-container h1.title {
+	height: 150px;
+	font-size: 80px;
+    }
+    
     .feed-title-bar {
-	min-height: 50px !important;
+	min-height: 150px !important;
     }
     
     .feed-title {
-	height: 50px !important;
+	min-height: 150px !important;
     }
 
-    .feed h2.provider {
-	max-height: 50px !important;
-	font-size: 42px;
+    .feeds h2.provider {
+	max-height: 150px !important;
+	font-size: 64px;
     }
     
     .feed-contents .feed-container {
 	height: 0px;
-	overflow: hidden;
+	overflow: scroll;
 	transition-property: height;
 	transition-duration: 1s;
 	transition-timing-function: ease-in-out;
 	-webkit-transition-property: height;
 	-webkit-transition-duration: 1s;
 	-webkit-transition-timing-function: ease-in-out;
-	
     }
 
     .news-container div.languages {
-	font-size: 20px;
+	font-size: 50px;
     }
     .news-container a.languages {
-	width: 45px;
+	width: 100px;
     }
-    svg {
+
+    .feed h3.title {
+	font-size: 56px;
+    }
+    .feed .summary {
+	font-size: 48px;
+    }
+    .feed .published {
+	font-size: 40px;
+    }
+    
+    md-icon {
+	height: auto !important;
+	min-width: auto !important;
+	width: auto !important;
+    }
+    md-icon svg {
 	-webkit-transition: -webkit-transform 0.3s ease-in;
 	transition: transform 0.3s ease-in;
+	width: 96px;
+	height: 96px;
     }
     .arrow-up {
 	-ms-transform: rotate(180deg); /* IE 9 */
@@ -208,4 +229,9 @@ body {
 	transform: rotate(180deg);
     }
 
+    .md-button.md-icon-button {
+	min-height: 150px !important;
+	height: 150px !important;
+	min-width: 150px !important;
+    }
 }
