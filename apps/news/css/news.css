@@ -13,6 +13,8 @@ body {
 }
 
 .root-container h1.title {
+    font-size: 72px;
+    padding: 10px;
     witdh: 100%;
     text-align: center;
     margin: 0px;
@@ -28,7 +30,6 @@ body {
 
 .news-container a.languages {
     display: inline-block;
-    width: 20px;
     color: white;
     padding: 2px;
 }
@@ -97,11 +98,19 @@ body {
 
 
 @media screen and (min-device-width: 800px) {
-    .root-container h1.title {
-	font-size: 72px;
-	padding: 10px;
+
+    .feed-title-bar {
+	min-height: 32px !important;
+    }
+    
+    .feed-title {
+	height: 32px !important;
     }
 
+    .feed h2.provider {
+	max-height: 30px !important;
+    }
+    
     .feeds-wrapper {
 	padding-left: 2px;
 	padding-right: 2px;
@@ -122,6 +131,10 @@ body {
 	width: 33%;
     }
 
+    .news-container a.languages {
+	width: 20px;
+    }
+    
     .news-container .feeds {
 	font-size: small;
 	height: 332px;		/* feed + provider header*/
@@ -154,6 +167,19 @@ body {
 
 @media screen and (max-device-width: 799px) {
 
+    .feed-title-bar {
+	min-height: 50px !important;
+    }
+    
+    .feed-title {
+	height: 50px !important;
+    }
+
+    .feed h2.provider {
+	max-height: 50px !important;
+	font-size: 42px;
+    }
+    
     .feed-contents .feed-container {
 	height: 0px;
 	overflow: hidden;
@@ -164,6 +190,13 @@ body {
 	-webkit-transition-duration: 1s;
 	-webkit-transition-timing-function: ease-in-out;
 	
+    }
+
+    .news-container div.languages {
+	font-size: 20px;
+    }
+    .news-container a.languages {
+	width: 45px;
     }
     svg {
 	-webkit-transition: -webkit-transform 0.3s ease-in;

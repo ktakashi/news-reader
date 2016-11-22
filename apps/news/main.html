@@ -28,9 +28,9 @@
 	  <div class="feeds-wrapper">
 	    <div class="feed-contents" ng-repeat="summary in summaries" ng-init="provider=summary.provider">
 	      <div ng-hide="hide_provider[provider]" class="feeds">
-		<md-toolbar style="min-height: 32px !important">
-		  <div class="md-toolbar-tools" style="height: 32px !important">
-		    <h2 class="provider" style="max-height: 30px !important"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
+		<md-toolbar class="feed-title-bar">
+		  <div class="feed-title md-toolbar-tools">
+		    <h2 class="provider"><a href="{{urls[provider]}}" target="_blank">{{provider}}</a></h2>
 		    <span flex></span>
 		    <md-button class="md-icon-button" ng-click="clear_filter(provider)" ng-disabled="is_loading()" ng-hide="!filters[provider]">
 		      <md-icon md-svg-src="/news/img/close_32x32.svg" aria-label="Clear filter {{provider}}"></md-icon>
