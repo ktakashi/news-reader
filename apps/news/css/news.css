@@ -95,6 +95,16 @@ body {
     clear: both;
 }
 
+md-icon svg {
+    -webkit-transition: -webkit-transform 0.3s ease-in;
+    transition: transform 0.3s ease-in;
+}
+
+.round {
+    -ms-transform: rotate(360deg); /* IE 9 */
+    -webkit-transform: rotate(360deg); /* Chrome, Safari, Opera */
+    transform: rotate(360deg);    
+}
 
 @media screen and (min-device-width: 800px) {
 
@@ -221,11 +231,14 @@ body {
 	width: auto !important;
     }
     md-icon svg {
-	-webkit-transition: -webkit-transform 0.3s ease-in;
-	transition: transform 0.3s ease-in;
 	width: 96px;
 	height: 96px;
     }
+
+    .show {
+	height: 750px !important;
+    }
+    
     .arrow-up {
 	-ms-transform: rotate(180deg); /* IE 9 */
 	-webkit-transform: rotate(180deg); /* Chrome, Safari, Opera */

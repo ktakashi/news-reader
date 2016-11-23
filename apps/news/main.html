@@ -35,7 +35,7 @@
 		    <md-button class="md-icon-button" ng-click="clear_filter(provider)" ng-disabled="is_loading()" ng-hide="!filters[provider]">
 		      <md-icon md-svg-src="/news/img/close_32x32.svg" aria-label="Clear filter {{provider}}"></md-icon>
 		    </md-button>
-		    <md-button class="md-icon-button" ng-click="load_summary(provider)" ng-disabled="is_loading()">
+		    <md-button class="md-icon-button" ng-click="load_summary($event, provider)" ng-disabled="is_loading()" ng-if="!is_mobile || shown[provider]">
 		      <md-icon md-svg-src="/news/img/refresh_32x32.svg" aria-label="Refresh {{provider}}"></md-icon>
 		    </md-button>
 		    <md-icon md-svg-src="/news/img/circle-arrow-down_32x32.svg" aria-label="Show {{provider}}" slide-toggle="{{provider}}" ng-if="is_mobile"></md-icon>

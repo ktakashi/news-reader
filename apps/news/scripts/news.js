@@ -44,6 +44,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.offsets = {};
 	$scope.filters = {};
 	$scope.is_mobile = check_device_size();
+	$scope.shown = {};
 	
 	$http.get("/news/providers").
 	    then(function (response) {
@@ -94,13 +95,16 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		});
 	    }
 	};
-	$scope.load_summary = function(provider) {
+	$scope.load_summary = function($event, provider) {
 	    // only for UX, it's better to see something is working...
 	    $scope.summaries.forEach(function(summary){
 		if (summary.provider === provider) {
 		    summary.feeds = [];
 		}
 	    });
+	    var target = $event.currentTarget || $event.target;
+	    var icon = angular.element(target).children().children();
+	    icon.addClass('round');
 	    var callback = function (response) {
 		var feeds = response.data;
 		$scope.summaries.forEach(function(summary){
@@ -109,6 +113,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		    }
 		});
 		$scope.offsets[provider] = feeds.length;
+		icon.removeClass('round');
 	    };
 	    if ($scope.filters[provider]) {
 		$http.post("/news/summary/" + provider,
@@ -172,6 +177,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    return size > 1;
 	    
 	};
+
     })
 
     .controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
@@ -213,22 +219,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		var target, svg;
 		attrs.expanded = false;
 		element.bind('click', function() {
-		    console.log(attrs.slideToggle);
-		    if (!target) target = document.getElementById(attrs.slideToggle);
+		    if (!target) {
+			var tmp = document.getElementById(attrs.slideToggle);
+			target = angular.element(tmp);
+		    }
 		    // FIXME this is depending on AngularJS 
 		    if (!svg) svg = element.children();
 		    
 		    if(!attrs.expanded) {
-			target.style.height = '750px';
-		    } else {
-			target.style.height = '0px';
-		    }
-		    attrs.expanded = !attrs.expanded;
-		    if (attrs.expanded) {
+			target.addClass('show');
 			svg.addClass('arrow-up');
 		    } else {
+			target.removeClass('show');
 			svg.removeClass('arrow-up');
 		    }
+		    attrs.expanded = !attrs.expanded;
+		    scope.shown[attrs.slideToggle] = attrs.expanded;
+		    scope.$apply();
 		});
 	    }
 	}
