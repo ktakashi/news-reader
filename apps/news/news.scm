@@ -135,9 +135,11 @@
 (define retrieve-summaries
   (cuberteria-object-mapping-handler <providers>
     (lambda (providers req)
+      (define (pub-date<=? a b)
+	(time>=? (feed-summary-created-date a) (feed-summary-created-date b)))
       (define (->summary-map provider summaries)
 	`#(("provider" . ,provider)
-	   ("feeds" ,@(map summary->array summaries))))
+	   ("feeds" ,@(map summary->array (list-sort pub-date<=? summaries)))))
       (define (name-ref e) (cdr (vector-ref e 0)))
       (define (name<=? a b) (string<=? (name-ref a) (name-ref b)))
       (if (null? (~ providers 'providers))
