@@ -39,6 +39,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.providers = [];
 	$scope.summaries = [];
 	$scope.urls = {};
+	$scope.current_language = "*";
 	$scope.languages = {};
 	$scope.hide_provider = {};
 	$scope.offsets = {};
@@ -154,6 +155,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    }
 	};
 	$scope.hide_by_lang = function(lang) {
+	    $scope.current_language = lang;
 	    $scope.providers.forEach(function(provider) {
 		if (lang === '*') {
 		    $scope.hide_provider[provider.name] = false;

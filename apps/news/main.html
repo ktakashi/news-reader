@@ -21,8 +21,10 @@
 	<div ng-controller="providerCtrl" ng-cloak>
     	  <div class="languages" ng-if="is_multi_lingual()">
 	    lang:
-	    <a href="javascript:void(0)" class="languages" ng-click="hide_by_lang('*')">all</a>
-	    <a ng-repeat="(lang, dummy) in languages" class="languages"
+	    <a href="javascript:void(0)"
+	       ng-class="current_language == '*' ? 'selected' : ''" class="languages" ng-click="hide_by_lang('*')">all</a>
+	    <a ng-repeat="(lang, dummy) in languages"
+	       ng-class="current_language == lang ? 'selected' : ''" class="languages"
 	       href="javascript:void(0)" ng-click="hide_by_lang(lang)">{{lang}}</a>
 	  </div>
 	  <div class="feeds-wrapper">
