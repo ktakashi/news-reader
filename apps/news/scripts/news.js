@@ -97,15 +97,28 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    }
 	};
 	$scope.load_summary = function($event, provider) {
+	    var target = $event.currentTarget || $event.target;
+	    var icon = angular.element(target).children().children();
+	    icon.addClass('round');
+	    load_summary(provider, function() {
+		icon.removeClass('round');
+	    });
+	};
+	$scope.filter_by_url = function(provider, url) {
+	    $scope.filters[provider] = url;
+	    load_summary(provider, function() {});
+	};
+	$scope.clear_filter = function(provider) {
+	    $scope.filters[provider] = false;
+	    load_summary(provider, function() {});
+	};
+	function load_summary(provider, thunk) {
 	    // only for UX, it's better to see something is working...
 	    $scope.summaries.forEach(function(summary){
 		if (summary.provider === provider) {
 		    summary.feeds = [];
 		}
 	    });
-	    var target = $event.currentTarget || $event.target;
-	    var icon = angular.element(target).children().children();
-	    icon.addClass('round');
 	    var callback = function (response) {
 		var feeds = response.data;
 		$scope.summaries.forEach(function(summary){
@@ -114,7 +127,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		    }
 		});
 		$scope.offsets[provider] = feeds.length;
-		icon.removeClass('round');
+		thunk();
 	    };
 	    if ($scope.filters[provider]) {
 		$http.post("/news/summary/" + provider,
@@ -123,15 +136,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    } else {
 		$http.get("/news/summary/" + provider).then(callback);
 	    }
-	};
-	$scope.filter_by_url = function(provider, url) {
-	    $scope.filters[provider] = url;
-	    $scope.load_summary(provider);
-	};
-	$scope.clear_filter = function(provider) {
-	    $scope.filters[provider] = false;
-	    $scope.load_summary(provider);
-	};
+	}
 	$scope.read_more = function(provider, offset) {
 	    var callback = function (response) {
 		if (response.data.length != 0) {

@@ -255,4 +255,11 @@ md-icon svg {
 	height: 150px !important;
 	min-width: 150px !important;
     }
+
+    .footer {
+	height: 120px;
+    }
+    .copyright {
+	font-size: 32px;
+    }
 }
