@@ -184,7 +184,17 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    return size > 1;
 	    
 	};
-
+	$scope.tweet = function(s) {
+	    console.log(s);
+	    var link = "https://twitter.com/intent/tweet?text=" + get_title(s.title) + "&url=" + encode(s.feed_url);
+	    window.open(link, '_blank');
+	};
+	function get_title (title) {
+	    return encode("\"" + title + "\" via news-reader.nl");
+	}
+	function encode(str) {
+	    return encodeURIComponent(str);
+	}
     })
 
     .controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
