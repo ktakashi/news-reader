@@ -54,7 +54,9 @@
 		      <a href="javascript:void(0)" ng-click="filter_by_url(provider, s.feed_url)">{{s.feed_name}}</a>,
 		      {{s.created | date : 'MMM d, y h:mm:ss a'}}</div>
 		    <div class="share">
-		      <md-icon md-svg-src="/news/img/twitter.svg" aria-label="Twitter" slide-toggle="{{provider}}" ng-click="tweet(s)" />
+		      <md-button class="md-icon-button" ng-click="tweet(s)">
+			<md-icon md-svg-src="/news/img/twitter.svg" aria-label="Twitter" />
+		      </md-button>
 		    </div>
 		  </div>
 		  <div class="read-more" ng-hide="!offsets[provider]" ng-disabled="is_loading()">
