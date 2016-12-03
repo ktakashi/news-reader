@@ -186,7 +186,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	};
 	$scope.tweet = function(s) {
 	    console.log(s);
-	    var link = "https://twitter.com/intent/tweet?text=" + get_title(s.title) + "&url=" + encode(s.feed_url);
+	    var link = "https://twitter.com/intent/tweet?text=" + get_title(s.title) + "&url=" + encode(s.link);
 	    window.open(link, '_blank');
 	};
 	function get_title (title) {
