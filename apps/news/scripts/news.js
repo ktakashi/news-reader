@@ -46,7 +46,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.filters = {};
 	$scope.is_mobile = check_device_size();
 	$scope.shown = {};
-	
+
 	$http.get("/news/providers").
 	    then(function (response) {
 		$scope.providers = response.data;
@@ -233,27 +233,33 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	return {
 	    restrict: 'A',
 	    link: function(scope, element, attrs) {
-		var target, svg;
-		attrs.expanded = false;
-		element.bind('click', function() {
-		    if (!target) {
-			var tmp = document.getElementById(attrs.slideToggle);
-			target = angular.element(tmp);
-		    }
-		    // FIXME this is depending on AngularJS 
-		    if (!svg) svg = element.children();
-		    
-		    if(!attrs.expanded) {
-			target.addClass('show');
-			svg.addClass('arrow-up');
-		    } else {
-			target.removeClass('show');
-			svg.removeClass('arrow-up');
-		    }
-		    attrs.expanded = !attrs.expanded;
-		    scope.shown[attrs.slideToggle] = attrs.expanded;
-		    scope.$apply();
-		});
+		if (scope.is_mobile) {
+		    var target, svg;
+		    attrs.expanded = false;
+		    element.bind('click', function() {
+			if (!target) {
+			    var tmp = document.getElementById(attrs.slideToggle);
+			    target = angular.element(tmp);
+			}
+			// FIXME this is depending on AngularJS 
+			if (!svg) {
+			    var tmp = document.getElementById(attrs.slideToggle + " toggle");
+			    console.log(tmp);
+			    svg = angular.element(tmp);
+			}
+			
+			if(!attrs.expanded) {
+			    target.addClass('show');
+			    svg.addClass('arrow-up');
+			} else {
+			    target.removeClass('show');
+			    svg.removeClass('arrow-up');
+			}
+			attrs.expanded = !attrs.expanded;
+			scope.shown[attrs.slideToggle] = attrs.expanded;
+			scope.$apply();
+		    });
+		}
 	    }
 	}
     })
