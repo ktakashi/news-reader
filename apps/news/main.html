@@ -56,6 +56,7 @@
 		  </div>
 		</md-toolbar>
 		<div class="feed-container" id="{{ provider }}">
+		  <select class="feed_filter" ng-options="f as f.name for f in find_feeds(provider)" ng-change="filter_feed(provider)" ng-model="selected_feed[provider]"></select>
 		  <div ng-repeat="s in summary.feeds" class="feed" ng-hide="languages[s.language]">
 		    <h3 class="title">
 		      <a ng-click="show_link($event, s.link, s.title)" href="javascript:void(0)" class="link">{{s.title}}</a>

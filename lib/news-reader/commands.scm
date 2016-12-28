@@ -41,6 +41,7 @@
 	  provider-name
 	  provider-url
 	  provider-languages
+	  provider-feeds
 	  feed-summary-name
 	  feed-summary-link
 	  feed-summary-feed-name
@@ -58,6 +59,7 @@
 	  (news-reader config)
 	  (util concurrent)
 	  (text sql)
+	  (text json)
 	  (rfc http)
 	  (srfi :1)
 	  (srfi :14)
@@ -252,12 +254,19 @@
 		   (vector-ref v 4))))))
       (thread-pool-wait-all! thread-pool))))
 
-(define-record-type provider (fields name url languages))
+(define-record-type provider (fields name url languages feeds))
 (define news-reader-retrieve-provider
   (let ()
     (define select-sql
       (ssql->sql
-       '(select ((~ p name) (~ p url) (string_agg (distinct (~ l code2)) ","))
+       '(select ((~ p name) (~ p url) (string_agg (distinct (~ l code2)) ",")
+		 ;; make JSON structure
+		 (^ "["
+		    (string_agg
+		     (^ "{\"name\":\""   (replace (~ f title) "\"" "\\\"")
+			"\",\"url\":\"" (~ f url) "\"}")
+		     ",")
+		    "]"))
 		(from ((as provider p)
 		       (inner-join (as feed f)
 				   (on (= (~ p id) (~ f provider_id))))
@@ -265,13 +274,15 @@
 				   (on (= (~ l id) (~ f language_id))))))
 		(group-by (~ p id) (~ p name) (~ p url))
 		(order-by (~ p name)))))
+    (define (string->json s) (json-read (open-string-input-port s)))
     (lambda ()
       (call-with-dbi-connection
        (lambda (dbi)
 	 (define select-stmt (dbi-prepared-statement dbi select-sql))
 	 (define (->provider query)
 	   (make-provider (vector-ref query 0) (vector-ref query 1)
-			  (string-split (vector-ref query 2) ",")))
+			  (string-split (vector-ref query 2) ",")
+			  (string->json (vector-ref query 3))))
 	 (dbi-query-map (dbi-execute-query! select-stmt) ->provider))))))
     
 (define-record-type feed-summary

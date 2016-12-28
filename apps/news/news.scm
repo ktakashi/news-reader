@@ -80,7 +80,8 @@
   (define (->array provider)
     `#((name . ,(provider-name provider))
        (url . ,(provider-url provider))
-       (languages . ,(provider-languages provider))))
+       (languages . ,(provider-languages provider))
+       (feeds . ,(provider-feeds provider))))
   (let ((names (map ->array (news-reader-retrieve-provider))))
     (values 200 'application/json (json->string names))))
 

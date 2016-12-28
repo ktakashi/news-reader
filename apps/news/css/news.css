@@ -52,6 +52,10 @@ body {
     padding-top: 10px;
 }
 
+.feed-container .feed_filter {
+    width: 100%;
+}
+
 .feeds .feed-container {
     position: relative;
     overflow: scroll;
@@ -229,6 +233,10 @@ md-icon svg {
     .feed .published {
 	font-size: 40px;
     }
+    .feed-container .feed_filter {
+	height: 100px;
+	font-size: 40px;
+    }
     
     md-icon {
 	height: auto !important;
@@ -242,6 +250,7 @@ md-icon svg {
 
     .show {
 	height: 750px !important;
+	background-color: rgb(232, 232, 232);
     }
     
     .arrow-up {

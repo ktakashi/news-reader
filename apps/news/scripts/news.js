@@ -46,7 +46,8 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.filters = {};
 	$scope.is_mobile = check_device_size();
 	$scope.shown = {};
-
+	$scope.selected_feed = {};
+	
 	$http.get("/news/providers").
 	    then(function (response) {
 		$scope.providers = response.data;
@@ -108,8 +109,12 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    $scope.filters[provider] = url;
 	    load_summary(provider, function() {});
 	};
+	$scope.filter_feed = function(provider) {
+	    $scope.filter_by_url(provider, $scope.selected_feed[provider].url);
+	};
 	$scope.clear_filter = function(provider) {
 	    $scope.filters[provider] = false;
+	    $scope.selected_feed[provider] = false;
 	    load_summary(provider, function() {});
 	};
 	function load_summary(provider, thunk) {
@@ -185,7 +190,6 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    
 	};
 	$scope.tweet = function(s) {
-	    console.log(s);
 	    var link = "https://twitter.com/intent/tweet?text=" + get_title(s.title) + "&url=" + encode(s.link);
 	    window.open(link, '_blank');
 	};
@@ -195,6 +199,14 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	function encode(str) {
 	    return encodeURIComponent(str);
 	}
+
+	$scope.find_feeds = function(provider_name) {
+	    for (var i = 0; i < $scope.providers.length; i++) {
+		var p = $scope.providers[i];
+		if (p.name === provider_name) return p.feeds;
+	    }
+	    return [];
+	};
     })
 
     .controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
@@ -244,7 +256,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 			// FIXME this is depending on AngularJS 
 			if (!svg) {
 			    var tmp = document.getElementById(attrs.slideToggle + " toggle");
-			    console.log(tmp);
 			    svg = angular.element(tmp);
 			}
 			
