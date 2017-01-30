@@ -67,13 +67,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.load_summaries = function () {
 	    clear_filters($scope);
 	    var names = $scope.providers.map(function(p) { return p.name; });
-	    $http.post("/news/summary", { providers: names }).
-		then(function (response) {
-		    $scope.summaries = response.data;			
-		    $scope.summaries.forEach(function(summary) {
-			$scope.offsets[summary.provider] = summary.feeds.length;
-		    });
-		});
+	    request_summaries($http, { providers: names });
 	};
 	if ($scope.is_mobile) {
 	    $scope.show_link = function (ev, link, title) {
@@ -119,6 +113,104 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    $scope.selected_feed[provider] = false;
 	    load_summary(provider, function() {});
 	};
+	$scope.read_more = function(provider, offset) {
+	    var callback = function (response) {
+		if (response.data.length != 0) {
+		    var feeds = response.data;
+		    $scope.summaries.forEach(function(summary){
+			if (summary.provider === provider) {
+			    summary.feeds = summary.feeds.concat(feeds);
+			}
+		    });
+		    $scope.offsets[provider] += feeds.length;
+		} else {
+		    $scope.offsets[provider] = false;
+		}
+	    };
+	    var url = "/news/summary/" + provider;
+	    if ($scope.filters[provider]) {
+		$http.post(url, { "offset": offset,
+				  feed_url: $scope.filters[provider] })
+		    .then(callback);
+	    } else {
+		$http.get(url + "?offset=" + offset).then(callback);
+	    }
+	};
+	$scope.hide_by_lang = function(lang) {
+	    $scope.current_language = lang;
+	    $scope.providers.forEach(function(provider) {
+		if (lang === '*') {
+		    $scope.hide_provider[provider.name] = false;
+		} else {
+		    $scope.hide_provider[provider.name] =
+			(provider.languages.indexOf(lang) < 0);
+		}
+	    });
+	    for (var key in $scope.languages) {
+		if (lang === '*') {
+		    $scope.languages[key] = false;
+		} else {
+		    $scope.languages[key] = !(key === lang);
+		}
+	    }
+	};
+	$scope.is_multi_lingual = function() {
+	    var size = 0;
+	    for (var key in $scope.languages) {
+		size++;
+	    }
+	    return size > 1;
+	    
+	};
+	$scope.tweet = function(s) {
+	    var link = "https://twitter.com/intent/tweet?text="
+		+ get_title(s.title) + "&url=" + encode(s.link);
+	    window.open(link, '_blank');
+	};
+	$scope.find_feeds = function(provider_name) {
+	    for (var i = 0; i < $scope.providers.length; i++) {
+		var p = $scope.providers[i];
+		if (p.name === provider_name) return p.feeds;
+	    }
+	    return [];
+	};
+
+	$scope.search_feeds = function() {
+	    $scope.query.toggle = false;
+	    request_summaries($http, create_request_parameter($scope));
+	};
+
+	function request_summaries($http, param) {
+	    $http.post("/news/summary", param)
+		.then(function (response) {
+		    $scope.summaries = response.data;			
+		    $scope.summaries.forEach(function(summary) {
+			$scope.offsets[summary.provider] = summary.feeds.length;
+		    });
+		});
+	}
+	function create_request_parameter($scope) {
+	    var param = { limit: 10 };
+	    if ($scope.query.provider) {
+		param.providers = [$scope.query.provider.name];
+		param.limit = 50;
+		if ($scope.query.feeds) {
+		    param.feeds = $scope.query.feeds;
+		}
+	    } else {
+		param.providers = $scope.providers.map(function(p) {
+		    return p.name;
+		});
+	    }
+	    
+	    if ($scope.query.from) {
+		param.from = $scope.query.from.getTime() /1000;
+	    }
+	    if ($scope.query.to) {
+		param.to = $scope.query.to.getTime() /1000;
+	    }
+	    return param;
+	}
 	function clear_filters($scope) {
 	    $scope.filters = {};
 	    $scope.selected_feed = {};
@@ -149,57 +241,6 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		$http.get("/news/summary/" + provider).then(callback);
 	    }
 	}
-	$scope.read_more = function(provider, offset) {
-	    var callback = function (response) {
-		if (response.data.length != 0) {
-		    var feeds = response.data;
-		    $scope.summaries.forEach(function(summary){
-			if (summary.provider === provider) {
-			    summary.feeds = summary.feeds.concat(feeds);
-			}
-		    });
-		    $scope.offsets[provider] += feeds.length;
-		} else {
-		    $scope.offsets[provider] = false;
-		}
-	    };
-	    var url = "/news/summary/" + provider;
-	    if ($scope.filters[provider]) {
-		$http.post(url, { "offset": offset, feed_url: $scope.filters[provider] })
-		    .then(callback);
-	    } else {
-		$http.get(url + "?offset=" + offset).then(callback);
-	    }
-	};
-	$scope.hide_by_lang = function(lang) {
-	    $scope.current_language = lang;
-	    $scope.providers.forEach(function(provider) {
-		if (lang === '*') {
-		    $scope.hide_provider[provider.name] = false;
-		} else {
-		    $scope.hide_provider[provider.name] = (provider.languages.indexOf(lang) < 0);
-		}
-	    });
-	    for (var key in $scope.languages) {
-		if (lang === '*') {
-		    $scope.languages[key] = false;
-		} else {
-		    $scope.languages[key] = !(key === lang);
-		}
-	    }
-	};
-	$scope.is_multi_lingual = function() {
-	    var size = 0;
-	    for (var key in $scope.languages) {
-		size++;
-	    }
-	    return size > 1;
-	    
-	};
-	$scope.tweet = function(s) {
-	    var link = "https://twitter.com/intent/tweet?text=" + get_title(s.title) + "&url=" + encode(s.link);
-	    window.open(link, '_blank');
-	};
 	function get_title (title) {
 	    return encode("\"" + title + "\" via news-reader.nl");
 	}
@@ -207,40 +248,6 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    return encodeURIComponent(str);
 	}
 
-	$scope.find_feeds = function(provider_name) {
-	    for (var i = 0; i < $scope.providers.length; i++) {
-		var p = $scope.providers[i];
-		if (p.name === provider_name) return p.feeds;
-	    }
-	    return [];
-	};
-
-	$scope.search_feeds = function() {
-	    $scope.query.toggle = false;
-	    var param = { offset: 10 };
-	    if ($scope.query.provider) {
-		param.provider = $scope.query.provider.name;
-		param.offset = 50;
-	    }
-	    if ($scope.query.feed) {
-		param.feed = $scope.query.feed;
-	    }
-	    if ($scope.query.from) {
-		param.from = $scope.query.from.getTime() /1000;
-		console.log(param.from);
-	    }
-	    if ($scope.query.to) {
-		param.to = $scope.query.to.getTime() /1000;
-	    }
-	    
-	    $http.post("/news/search", param).
-		then(function (response) {
-		    $scope.summaries = response.data;			
-		    $scope.summaries.forEach(function(summary) {
-			$scope.offsets[summary.provider] = summary.feeds.length;
-		    });
-		});	    
-	};
     })
 
     .controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {

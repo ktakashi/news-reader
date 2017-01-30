@@ -52,7 +52,7 @@
 		    <label>Provider:</label><select class="query_provider" ng-options="p as p.name for p in providers" ng-model="query.provider"></select>
 		  </div>
 		  <div class="query_feed" ng-if="query.provider">
-		    <label>Feed:</label><select class="query_feed" ng-options="f.url as f.name for f in query.provider.feeds" ng-model="query.provider.feed"></select>
+		    <label>Feed:</label><select class="query_feed" ng-options="f.url as f.name for f in query.provider.feeds" ng-model="query.feeds" multiple="true"></select>
 		  </div>
 		</div>
 		<div class="query_dates">

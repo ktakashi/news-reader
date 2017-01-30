@@ -36,7 +36,6 @@
 	  news-reader-retrieve-summary
 	  news-reader-retrieve-summary-by-feed-url
 	  news-reader-retrieve-summaries
-	  news-reader-search-sammaries
 	  news-reader-update-feed-language
 	  ;; Should we move this somewhere?
 	  provider-name
@@ -325,42 +324,25 @@
   (generate-retriever1 (summary-sql :offset '((offset ?))
 				    :where '((where (= (~ f url) ?))))))
 
-(define (news-reader-search-sammaries criteria limit offset)
-  (define (criteria->where criteria)
-    (define map '((provider . (~ p name))
-		  (feed . (~ f url))))
-    `((where (and ,@(filter-map
-		     (lambda (criterion)
-		       (cond ((eq? (car criterion) 'from) `(<= ? (~ s pubDate)))
-			     ((eq? (car criterion) 'to) `(< (~ s pubDate) ?))
-			     ((assq (car criterion) map) =>
-			      (lambda (s) `(= ,(cdr s) ?)))
-			     (else #f))) criteria)))))
-  (define ht (make-string-hashtable))
-  (if (and (non-negative-fixnum? limit) (non-negative-fixnum? offset))
-      (call-with-dbi-connection
-       (lambda (dbi)
-	 (define select-sql
-	   (ssql->sql (summary-sql :offset '((offset ?))
-				   :where (criteria->where criteria))))
-	 (define params (filter-map cdr criteria))
-	 (define select-stmt (dbi-prepared-statement dbi select-sql))
-	 (dbi-query-for-each
-	  (apply dbi-execute-query! select-stmt
-		 `(,@params ,(min limit +max-fetch-count+) ,offset))
-	  (lambda (query)
-	      (let ((n (vector-ref query 0))
-		    (s (apply make-feed-summary (vector->list query))))
-		(hashtable-update! ht n (lambda (e) (cons s e)) '()))))
-	 ht))
-      '()))
-
 (define news-reader-retrieve-summaries
   (let ()
-    (define select-sql (ssql->sql (summary-sql)))
+    (define (criteria->where providers criteria)
+      (define (?? _) '?)
+      `((where (and (= (~ p name) ?)
+		    ,@(filter-map
+		       (lambda (criterion)
+			 (cond ((eq? (car criterion) 'from)
+				`(<= ? (~ s pubDate)))
+			       ((eq? (car criterion) 'to) `(< (~ s pubDate) ?))
+			       ((eq? (car criterion) 'feeds)
+				`(in (~ f url) ,(map ?? (cdr criterion))))
+			       (else #f))) criteria)))))
     (define max-fetch (div +max-fetch-count+ 2))
-    (define (s ignore) select-sql)
-    (lambda (providers limit)
+    (lambda (providers criteria limit offset)
+      (define select-sql
+	(ssql->sql (summary-sql :offset '((offset ?))
+				:where (criteria->where providers criteria))))
+      (define (s ignore) select-sql)
       (and-let* (( (not (null? providers)) )
 		 ( (non-negative-fixnum? limit) )
 		 ;; NB: this doesn't work on SQLite3 but we are no longer
@@ -376,9 +358,11 @@
 	 (lambda (dbi)
 	   (define select-stmt (dbi-prepared-statement dbi sql))
 	   (define ht (make-string-hashtable))
+	   (define params (append-map cdr criteria))
 	   (dbi-query-for-each
 	    (apply dbi-execute-query! select-stmt
-		   (append-map (lambda (p) (list p limit)) providers))
+		   (append-map (lambda (p) `(,p ,@params ,limit ,offset))
+			       providers))
 	    (lambda (query)
 	      (let ((n (vector-ref query 0))
 		    (s (apply make-feed-summary (vector->list query))))
