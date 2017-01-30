@@ -156,11 +156,61 @@
 			"[]")))))
     :json? #t))
 
+(define-class <criteria> (<limit&offset>)
+  ((provider :init-value #f)
+   (feed :init-value #f)
+   (from :init-value #f)
+   (to :init-value #f)))
+(define search-summaries
+  (cuberteria-object-mapping-handler <criteria>
+    (lambda (criteria req)
+      (define (pub-date<=? a b)
+	(time>=? (feed-summary-created-date a) (feed-summary-created-date b)))
+      (define (->summary-map provider summaries)
+	`#(("provider" . ,provider)
+	   ("feeds" ,@(map summary->array (list-sort pub-date<=? summaries)))))
+      (define (name-ref e) (cdr (vector-ref e 0)))
+      (define (name<=? a b) (string<=? (name-ref a) (name-ref b)))
+      (define (->criteria criteria)
+	(define (->criterion criteria name conv)
+	  (cond ((~ criteria name) =>
+		 (lambda (v)
+		   (let ((r (conv v)))
+		     (if r
+			 `((,name . ,r))
+			 '()))))
+		(else '())))
+	(define (second->time-utc v)
+	  (let ((n (if (number? v) v (string->number v))))
+	    (and n (make-time time-utc 0 n))))
+	`(,@(->criterion criteria 'provider values)
+	  ,@(->criterion criteria 'feed values)
+	  ,@(->criterion criteria 'from second->time-utc)
+	  ,@(->criterion criteria 'to second->time-utc)))
+      (if (not (or (~ criteria 'provider)
+		   (~ criteria 'feed)
+		   (~ criteria 'from)
+		   (~ criteria 'to)))
+	  (values 403 'text/plain "Invalid request parameter")
+	  (let ((summaries (news-reader-search-sammaries
+			    (->criteria criteria)
+			    (~ criteria 'limit)
+			    (~ criteria 'offset))))
+	    (values 200 'application/json
+		    (if summaries
+			(json->string
+			 (list-sort name<=?
+			    (hashtable-map ->summary-map summaries)))
+			"[]")))))
+    :json? #t))
+
+
 (define (mount-paths)
   `(
     ((GET) "/providers"   ,retrieve-providers)
     ((POST GET) #/summary\/.+/ ,retrieve-summary)
     ((POST) "/summary"    ,retrieve-summaries)
+    ((POST) "/search"     ,search-summaries)
     ((GET) #/styles/      ,style-loader)
     ((GET) #/html/        ,template-loader)
     ((GET) #/img/         ,image-loader)

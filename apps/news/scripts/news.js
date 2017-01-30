@@ -47,6 +47,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.is_mobile = check_device_size();
 	$scope.shown = {};
 	$scope.selected_feed = {};
+	$scope.query = { max_date: new Date() };
 	
 	$http.get("/news/providers").
 	    then(function (response) {
@@ -64,6 +65,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    return $rootScope.loading;
 	};
 	$scope.load_summaries = function () {
+	    clear_filters($scope);
 	    var names = $scope.providers.map(function(p) { return p.name; });
 	    $http.post("/news/summary", { providers: names }).
 		then(function (response) {
@@ -76,7 +78,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	if ($scope.is_mobile) {
 	    $scope.show_link = function (ev, link, title) {
 		window.open(link, '_blank');
-	    }
+	    };
 	} else {
 	    $scope.show_link = function (ev, link, title) {
 		$mdDialog.show({
@@ -95,7 +97,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 			}
 		    }
 		});
-	    }
+	    };
 	};
 	$scope.load_summary = function($event, provider) {
 	    var target = $event.currentTarget || $event.target;
@@ -117,6 +119,11 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    $scope.selected_feed[provider] = false;
 	    load_summary(provider, function() {});
 	};
+	function clear_filters($scope) {
+	    $scope.filters = {};
+	    $scope.selected_feed = {};
+	    $scope.query = {};
+	}
 	function load_summary(provider, thunk) {
 	    // only for UX, it's better to see something is working...
 	    $scope.summaries.forEach(function(summary){
@@ -207,6 +214,33 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    }
 	    return [];
 	};
+
+	$scope.search_feeds = function() {
+	    $scope.query.toggle = false;
+	    var param = { offset: 10 };
+	    if ($scope.query.provider) {
+		param.provider = $scope.query.provider.name;
+		param.offset = 50;
+	    }
+	    if ($scope.query.feed) {
+		param.feed = $scope.query.feed;
+	    }
+	    if ($scope.query.from) {
+		param.from = $scope.query.from.getTime() /1000;
+		console.log(param.from);
+	    }
+	    if ($scope.query.to) {
+		param.to = $scope.query.to.getTime() /1000;
+	    }
+	    
+	    $http.post("/news/search", param).
+		then(function (response) {
+		    $scope.summaries = response.data;			
+		    $scope.summaries.forEach(function(summary) {
+			$scope.offsets[summary.provider] = summary.feeds.length;
+		    });
+		});	    
+	};
     })
 
     .controller('iFrameCtrl', function($scope, $mdDialog, $sce, url, title) {
@@ -214,7 +248,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	$scope.title = title;
 	$scope.close = function () {
 	    $mdDialog.cancel();
-	}
+	};
     })
 
 // Based on https://github.com/EricWVGG/AngularSlideables
@@ -272,7 +306,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		    });
 		}
 	    }
-	}
+	};
     })
 ;
 

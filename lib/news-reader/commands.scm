@@ -36,6 +36,7 @@
 	  news-reader-retrieve-summary
 	  news-reader-retrieve-summary-by-feed-url
 	  news-reader-retrieve-summaries
+	  news-reader-search-sammaries
 	  news-reader-update-feed-language
 	  ;; Should we move this somewhere?
 	  provider-name
@@ -292,7 +293,7 @@
 (define +max-fetch-count+ max-feeds)
 (define (non-negative-fixnum? n) (and (fixnum? n) (not (negative? n))))
 (define (summary-sql :key (offset '()) (where '((where (= (~ p name) ?)))))
-  `(select ((~ p name) (~ f title) (~ f url) (~ l code2)
+  `(select ((~ p name) (~ f title)  (~ f url) (~ l code2)
 	    (~ s guid) (~ s title) (~ s summary) (~ s pubDate))
 	   (from ((as feed_summary s)
 		  (inner-join (as feed f) (on (= (~ f id) (~ s feed_id))))
@@ -324,6 +325,35 @@
   (generate-retriever1 (summary-sql :offset '((offset ?))
 				    :where '((where (= (~ f url) ?))))))
 
+(define (news-reader-search-sammaries criteria limit offset)
+  (define (criteria->where criteria)
+    (define map '((provider . (~ p name))
+		  (feed . (~ f url))))
+    `((where (and ,@(filter-map
+		     (lambda (criterion)
+		       (cond ((eq? (car criterion) 'from) `(<= ? (~ s pubDate)))
+			     ((eq? (car criterion) 'to) `(< (~ s pubDate) ?))
+			     ((assq (car criterion) map) =>
+			      (lambda (s) `(= ,(cdr s) ?)))
+			     (else #f))) criteria)))))
+  (define ht (make-string-hashtable))
+  (if (and (non-negative-fixnum? limit) (non-negative-fixnum? offset))
+      (call-with-dbi-connection
+       (lambda (dbi)
+	 (define select-sql
+	   (ssql->sql (summary-sql :offset '((offset ?))
+				   :where (criteria->where criteria))))
+	 (define params (filter-map cdr criteria))
+	 (define select-stmt (dbi-prepared-statement dbi select-sql))
+	 (dbi-query-for-each
+	  (apply dbi-execute-query! select-stmt
+		 `(,@params ,(min limit +max-fetch-count+) ,offset))
+	  (lambda (query)
+	      (let ((n (vector-ref query 0))
+		    (s (apply make-feed-summary (vector->list query))))
+		(hashtable-update! ht n (lambda (e) (cons s e)) '()))))
+	 ht))
+      '()))
 
 (define news-reader-retrieve-summaries
   (let ()

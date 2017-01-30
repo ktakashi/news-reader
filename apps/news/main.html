@@ -14,7 +14,7 @@
     <meta property="og:url" content="http://news-reader.nl/" />
     <meta property="og:image" content="/apple-touch-icon.png" />
     <title>News reader</title>
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-sanitize.min.js"></script>
@@ -31,13 +31,42 @@
       <div class="title-container"><h1 class="title">News reader</h1></div>
       <div ng-app="news" id="news" class="news-container">
 	<div ng-controller="providerCtrl" ng-cloak>
-    	  <div class="languages" ng-if="is_multi_lingual()">
-	    lang:
-	    <a href="javascript:void(0)"
-	       ng-class="current_language == '*' ? 'selected' : ''" class="languages" ng-click="hide_by_lang('*')">all</a>
-	    <a ng-repeat="(lang, dummy) in languages"
-	       ng-class="current_language == lang ? 'selected' : ''" class="languages"
-	       href="javascript:void(0)" ng-click="hide_by_lang(lang)">{{lang}}</a>
+	  <div class="filters">
+    	    <div class="languages" ng-if="is_multi_lingual()">
+	      lang:
+	      <a href="javascript:void(0)"
+		 ng-class="current_language == '*' ? 'selected' : ''" class="languages" ng-click="hide_by_lang('*')">all</a>
+	      <a ng-repeat="(lang, dummy) in languages"
+		 ng-class="current_language == lang ? 'selected' : ''" class="languages"
+		 href="javascript:void(0)" ng-click="hide_by_lang(lang)">{{lang}}</a>
+	      <md-button class="md-icon-button search_icon" ng-click="query.toggle = !query.toggle" ng-disabled="is_loading()">
+		<md-icon md-svg-src="/news/img/search_32x32.svg" aria-label="Toggle filter"></md-icon>
+	      </md-button>
+	    </div>
+	    
+	    <div class="search_query" ng-hide="!query.toggle">
+	      filter:
+	      <div class="query_container">
+		<div class="query_providers">
+		  <div class="query_provider">
+		    <label>Provider:</label><select class="query_provider" ng-options="p as p.name for p in providers" ng-model="query.provider"></select>
+		  </div>
+		  <div class="query_feed" ng-if="query.provider">
+		    <label>Feed:</label><select class="query_feed" ng-options="f.url as f.name for f in query.provider.feeds" ng-model="query.provider.feed"></select>
+		  </div>
+		</div>
+		<div class="query_dates">
+		  <div class="query_from">
+		    <label>From:</label><md-datepicker ng-model="query.from" md-placeholder="Date from" md-max-date="query.max_date"></md-datepicker>
+		  </div>
+		  <div class="query_to">
+		    <label>To:</label><md-datepicker ng-model="query.to" md-placeholder="Date to" md-max-date="query.max_date"></md-datepicker>
+		  </div>
+		</div>
+		<md-button class="md-raised search_button" ng-click="search_feeds()" ng-disabled="is_loading()">Search</md-button>
+		<md-button class="md-raised search_button" ng-click="load_summaries()" ng-disabled="is_loading()" ng-hide="!query.provider">Clear</md-button>
+	      </div>
+	    </div>
 	  </div>
 	  <div class="feeds-wrapper">
 	    <div class="feed-contents" ng-repeat="summary in summaries" ng-init="provider=summary.provider">

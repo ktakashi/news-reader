@@ -20,7 +20,7 @@ body {
     font-family: "Architects Daughter", "Helvetica Neue", Helvetica, Arial, serif;
 }
 
-.news-container div.languages {
+.news-container div.filters {
     width: 100%;
     background-color: rgb(68, 98, 255);
     padding-left: 10px;
@@ -152,7 +152,43 @@ md-icon svg {
     .news-container a.languages {
 	width: 20px;
     }
+
+    .filters .md-button.md-icon-button {
+	min-height: 24px !important;
+	min-width: 24px !important;
+	height: 24px !important;
+	width: 24px !important;
+	padding: 0px !important;
+    }
     
+    .news-container .search_query {
+	position: relative;
+	top: 0px;
+    }
+
+    .news-container .query_container {
+	display: inline-block;
+	color: white;
+    }
+    .news-container .query_providers {
+	display: inline-block;
+    }
+    .news-container .query_provider {
+	display: inline-block;
+    }
+    .news-container .query_feed {
+	display: inline-block;
+    }
+    .news-container .query_dates {
+	display: inline-block;
+    }
+    .news-container .query_from {
+	display: inline-block;
+    }
+    .news-container .query_to {
+	display: inline-block;
+    }
+
     .news-container .feeds {
 	font-size: small;
 	height: 332px;		/* feed + provider header*/
@@ -224,6 +260,48 @@ md-icon svg {
 	width: 100px;
     }
 
+    button.search_icon {
+	position: fixed;
+	top: 0px;
+	right: 0px;
+	z-index: 100;
+    }
+
+    .news-container .search_query {
+	font-size: 50px;
+	position: fixed;
+	top: 150px;
+	z-index: 100;
+	background-color: rgb(232, 232, 232);
+	box-shadow: 10px 10px 10px 10px grey;
+    }
+    .query_container label {
+	display: inline-block;
+    }
+    .query_container select {
+	display: inline-block;
+	width: 400px;
+    }
+    .news-container .query_container {
+	color: rgb(68, 98, 255);
+    }
+    .news-container .query_from {
+	display: inline-block;
+    }
+    .news-container .query_to {
+	display: inline-block;
+    }
+    .md-datepicker-input {
+	font-size: 50px;
+	min-height: 50qpx !important;
+	width: 300px !important;
+    }
+    .search_button {
+	min-width: 300px !important;
+	min-height: 75px !important;
+	font-size: 50px !important;
+    }
+    
     .feed h3.title {
 	font-size: 56px;
     }
