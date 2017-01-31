@@ -95,8 +95,12 @@
   ((limit :init-value max-feeds :converter utf8->integer)))
 (define-class <limit&offset> (<limit>)
   ((offset :init-value 0 :converter utf8->integer)))
-(define-class <feed-filter> (<limit&offset>)
-  ((url :init-value #f :json-element-name "feed_url")))
+
+(define-class <criteria> (<limit&offset>)
+  ((providers :init-value '#())
+   (feeds     :init-value #f)
+   (from      :init-value #f)
+   (to        :init-value #f)))
 
 (define (summary->array summary)
   `#((link . ,(feed-summary-link summary))
@@ -111,31 +115,40 @@
 		   "~5")
 		  "Z"))))
 
+(define (->criteria criteria)
+  (define (->criterion criteria name conv)
+    (cond ((~ criteria name) =>
+	   (lambda (v)
+	     (let ((r (conv v)))
+	       (if r
+		   `((,name . ,r))
+		   '()))))
+	  (else '())))
+  (define (second->time-utc v)
+    (let ((n (if (number? v) v (string->number v))))
+      (and n (list (make-time time-utc 0 n)))))
+  `(,@(->criterion criteria 'feeds vector->list)
+    ,@(->criterion criteria 'from second->time-utc)
+    ,@(->criterion criteria 'to second->time-utc)))
+
 (define retrieve-summary
-  (cuberteria-object-mapping-handler <feed-filter>
+  (cuberteria-object-mapping-handler <criteria>
     (lambda (limit&offet req)
-      (define (query retriever provider param)
-	(let ((summaries (retriever param (~ limit&offet 'limit)
-				    (~ limit&offet 'offset))))
-	  (values 200 'application/json
-		  (json->string (map summary->array summaries)))))
+      (define (query retriever param)
+	)
       (with-path-variable (#/summary\/(.+)/ (http-request-path req))
 	((provider #f))
 	
-	(cond ((~ limit&offet 'url) =>
-	       (cut query news-reader-retrieve-summary-by-feed-url
-		    provider <>))
-	      (provider
-	       (query news-reader-retrieve-summary provider
-		      (uri-decode-string provider :cgi-decode #t)))
+	(cond (provider
+	       (let ((summaries (news-reader-retrieve-summary
+				 (uri-decode-string provider :cgi-decode #t)
+				 (->criteria limit&offet)
+				 (~ limit&offet 'limit)
+				 (~ limit&offet 'offset))))
+		 (values 200 'application/json
+			 (json->string (map summary->array summaries)))))
 	      (else (values 404 'text/plain "Not found")))))
     :json? #t))
-
-(define-class <criteria> (<limit&offset>)
-  ((providers :init-value '#())
-   (feeds     :init-value #f)
-   (from      :init-value #f)
-   (to        :init-value #f)))
 
 (define retrieve-summaries
   (cuberteria-object-mapping-handler <criteria>
@@ -147,21 +160,6 @@
 	   ("feeds" ,@(map summary->array (list-sort pub-date<=? summaries)))))
       (define (name-ref e) (cdr (vector-ref e 0)))
       (define (name<=? a b) (string<=? (name-ref a) (name-ref b)))
-      (define (->criteria criteria)
-	(define (->criterion criteria name conv)
-	  (cond ((~ criteria name) =>
-		 (lambda (v)
-		   (let ((r (conv v)))
-		     (if r
-			 `((,name . ,r))
-			 '()))))
-		(else '())))
-	(define (second->time-utc v)
-	  (let ((n (if (number? v) v (string->number v))))
-	    (and n (list (make-time time-utc 0 n)))))
-	`(,@(->criterion criteria 'feeds vector->list)
-	  ,@(->criterion criteria 'from second->time-utc)
-	  ,@(->criterion criteria 'to second->time-utc)))
       (if (null? (~ criteria 'providers))
 	  (values 200 'application/json "{}")
 	  (let ((summaries (news-reader-retrieve-summaries

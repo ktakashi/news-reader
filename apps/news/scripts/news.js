@@ -66,8 +66,7 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	};
 	$scope.load_summaries = function () {
 	    clear_filters($scope);
-	    var names = $scope.providers.map(function(p) { return p.name; });
-	    request_summaries($http, { providers: names });
+	    request_summaries($http, create_request_parameter($scope));
 	};
 	if ($scope.is_mobile) {
 	    $scope.show_link = function (ev, link, title) {
@@ -127,14 +126,13 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		    $scope.offsets[provider] = false;
 		}
 	    };
-	    var url = "/news/summary/" + provider;
+	    var param = create_request_parameter($scope);
+	    delete param['providers'];
 	    if ($scope.filters[provider]) {
-		$http.post(url, { "offset": offset,
-				  feed_url: $scope.filters[provider] })
-		    .then(callback);
-	    } else {
-		$http.get(url + "?offset=" + offset).then(callback);
+		param.feeds = [ $scope.filters[provider] ];
 	    }
+	    param.offset = offset;
+	    request_summary(provider, param, callback);
 	};
 	$scope.hide_by_lang = function(lang) {
 	    $scope.current_language = lang;
@@ -193,7 +191,6 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    var param = { limit: 10 };
 	    if ($scope.query.provider) {
 		param.providers = [$scope.query.provider.name];
-		param.limit = 50;
 		if ($scope.query.feeds) {
 		    param.feeds = $scope.query.feeds;
 		}
@@ -202,7 +199,9 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		    return p.name;
 		});
 	    }
-	    
+	    return populate_time_request_paramater($scope, param);
+	}
+	function populate_time_request_paramater($scope, param) {
 	    if ($scope.query.from) {
 		param.from = $scope.query.from.getTime() /1000;
 	    }
@@ -233,12 +232,22 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 		$scope.offsets[provider] = feeds.length;
 		thunk();
 	    };
+	    var param = populate_time_request_paramater($scope, {});
 	    if ($scope.filters[provider]) {
-		$http.post("/news/summary/" + provider,
-			   { feed_url: $scope.filters[provider] })
-		    .then(callback);
+		param.feeds = [ $scope.filters[provider] ];
+	    } else if ($scope.query.feeds) {
+		param.feeds = $scope.query.feeds;
+	    }
+	    request_summary(provider, param, callback);
+	}
+	function request_summary(provider, param, callback) {
+	    if (!'limit' in param) param.limit = 10;
+	    if (!'offset' in param) param.offset = 0;
+	    
+	    if (is_object_empty(param, "limit", "offset")) {
+		$http.get("/news/summary/" + provider + "?offset=" + param.offset + "&limit=" + param.limit).then(callback);
 	    } else {
-		$http.get("/news/summary/" + provider).then(callback);
+		$http.post("/news/summary/" + provider, param).then(callback);
 	    }
 	}
 	function get_title (title) {
@@ -246,6 +255,14 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	}
 	function encode(str) {
 	    return encodeURIComponent(str);
+	}
+	function is_object_empty(obj) {
+	    var rest = Array.from(arguments).slice(1);
+	    for (var k in obj) {
+		if (rest.indexOf(k) != -1) continue;
+		return false;
+	    }
+	    return true;
 	}
 
     })

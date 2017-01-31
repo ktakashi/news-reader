@@ -34,7 +34,6 @@
 	  news-reader-process-feed
 	  news-reader-retrieve-provider
 	  news-reader-retrieve-summary
-	  news-reader-retrieve-summary-by-feed-url
 	  news-reader-retrieve-summaries
 	  news-reader-update-feed-language
 	  ;; Should we move this somewhere?
@@ -306,42 +305,45 @@
 	   ,@offset))
 (define (generate-retriever1 ssql)
   (define select-sql (ssql->sql ssql))
-  (lambda (param limit offset)
-    (if (and (non-negative-fixnum? limit) (non-negative-fixnum? offset))
-	(call-with-dbi-connection
-	 (lambda (dbi)
-	   (define select-stmt (dbi-prepared-statement dbi select-sql))
-	   (dbi-query-map (dbi-execute-query! select-stmt param
-					      (min limit +max-fetch-count+)
-					      offset)
-			  (lambda (query)
-			    (apply make-feed-summary (vector->list query))))))
-	'())))
-(define news-reader-retrieve-summary
-  (generate-retriever1 (summary-sql :offset '((offset ?)))))
+  )
 
-(define news-reader-retrieve-summary-by-feed-url
-  (generate-retriever1 (summary-sql :offset '((offset ?))
-				    :where '((where (= (~ f url) ?))))))
+(define (criteria->where criteria)
+  (define (?? _) '?)
+  `((where (and (= (~ p name) ?)
+		,@(filter-map
+		   (lambda (criterion)
+		     (cond ((eq? (car criterion) 'from)
+			    `(<= ? (~ s pubDate)))
+			   ((eq? (car criterion) 'to) `(< (~ s pubDate) ?))
+			   ((eq? (car criterion) 'feeds)
+			    `(in (~ f url) ,(map ?? (cdr criterion))))
+			   (else #f))) criteria)))))
+
+(define (news-reader-retrieve-summary provider criteria limit offset)
+  (define select-sql
+    (ssql->sql (summary-sql :offset '((offset ?))
+			    :where (criteria->where criteria))))
+  (define params (append-map cdr criteria))
+  (define lim    (min limit +max-fetch-count+))
+  (if (and (non-negative-fixnum? limit) (non-negative-fixnum? offset))
+      (call-with-dbi-connection
+       (lambda (dbi)
+	 (define select-stmt (dbi-prepared-statement dbi select-sql))
+	 (dbi-query-map
+	  (apply dbi-execute-query! select-stmt
+		 `(,provider ,@params ,lim ,offset))
+	  (lambda (query)
+	    (apply make-feed-summary (vector->list query))))))
+      '()))
+
 
 (define news-reader-retrieve-summaries
   (let ()
-    (define (criteria->where providers criteria)
-      (define (?? _) '?)
-      `((where (and (= (~ p name) ?)
-		    ,@(filter-map
-		       (lambda (criterion)
-			 (cond ((eq? (car criterion) 'from)
-				`(<= ? (~ s pubDate)))
-			       ((eq? (car criterion) 'to) `(< (~ s pubDate) ?))
-			       ((eq? (car criterion) 'feeds)
-				`(in (~ f url) ,(map ?? (cdr criterion))))
-			       (else #f))) criteria)))))
     (define max-fetch (div +max-fetch-count+ 2))
     (lambda (providers criteria limit offset)
       (define select-sql
 	(ssql->sql (summary-sql :offset '((offset ?))
-				:where (criteria->where providers criteria))))
+				:where (criteria->where criteria))))
       (define (s ignore) select-sql)
       (and-let* (( (not (null? providers)) )
 		 ( (non-negative-fixnum? limit) )
