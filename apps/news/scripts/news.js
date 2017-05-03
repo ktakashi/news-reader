@@ -241,9 +241,8 @@ angular.module('news', ['ngMaterial', 'ngSanitize'])
 	    request_summary(provider, param, callback);
 	}
 	function request_summary(provider, param, callback) {
-	    if (!'limit' in param) param.limit = 10;
-	    if (!'offset' in param) param.offset = 0;
-	    
+	    if (!'limit' in param || !param.limit) param.limit = 10;
+	    if (!'offset' in param || !param.offset) param.offset = 0;
 	    if (is_object_empty(param, "limit", "offset")) {
 		$http.get("/news/summary/" + provider + "?offset=" + param.offset + "&limit=" + param.limit).then(callback);
 	    } else {
